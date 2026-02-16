@@ -117,13 +117,13 @@ export default function NotePage({ params }: { params: Promise<RouteParams> }) {
     editor.on('update', handler);
     return () => {
       editor.off('update', handler);
-      (saveContent as any).cancel();
+      (saveContent as unknown as { cancel: () => void }).cancel();
     };
   }, [editor, saveContent]);
 
   useEffect(() => {
     return () => {
-      (saveTitle as any).cancel();
+      (saveTitle as unknown as { cancel: () => void }).cancel();
     };
   }, [saveTitle]);
 

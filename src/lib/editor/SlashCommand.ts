@@ -11,7 +11,7 @@ export const SlashCommand = Extension.create({
             suggestion: {
                 char: '/',
                 startOfLine: false,
-                command: ({ editor, range, props }: { editor: Editor; range: Range; props: any }) => {
+                command: ({ editor, range, props }: { editor: Editor; range: Range; props: { command: (props: { editor: Editor; range: Range }) => void } }) => {
                     props.command({ editor, range });
                 },
             },
