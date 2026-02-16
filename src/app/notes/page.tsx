@@ -20,18 +20,22 @@ export default function Notes() {
     if (!user) return;
 
     const fetchNotes = async () => {
-      const q = query(
-        collection(db, 'notes'),
-        where('owner', '==', user.uid),
-        orderBy('updated_at', 'desc')
-      );
-      const snapshot = await getDocs(q);
-      const notes = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        title: doc.data().title || 'Untitled',
-        updated_at: doc.data().updated_at,
-      }));
-      setRows(notes);
+      try {
+        const q = query(
+          collection(db, 'notes'),
+          where('owner', '==', user.uid),
+          orderBy('updated_at', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        const notes = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          title: doc.data().title || 'Untitled',
+          updated_at: doc.data().updated_at,
+        }));
+        setRows(notes);
+      } catch (err) {
+        console.error('Notes fetch error:', err);
+      }
     };
 
     fetchNotes();

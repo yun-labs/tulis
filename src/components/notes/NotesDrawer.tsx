@@ -50,6 +50,8 @@ export function NotesDrawer({ open, currentNoteId, onClose }: NotesDrawerProps) 
         updated_at: doc.data().updated_at,
       }));
       setNotes(notesList);
+    }, (err) => {
+      console.error('Drawer notes sync error:', err);
     });
 
     return () => unsubscribe();
