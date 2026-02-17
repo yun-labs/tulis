@@ -23,26 +23,31 @@ const applyTheme = (theme: Theme | null) => {
 };
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [explicit, setExplicit] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'light';
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+  const [explicit, setExplicit] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored === 'light' || stored === 'dark';
+  });
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') {
-      setTheme(stored);
-      setExplicit(true);
-      applyTheme(stored);
-      return;
+    if (explicit) {
+      applyTheme(theme);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORAGE_KEY, theme);
+      }
+    } else {
+      applyTheme(null);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
     }
-
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = prefersDark ? 'dark' : 'light';
-    setTheme(initial);
-    setExplicit(false);
-    applyTheme(null);
-  }, []);
+  }, [theme, explicit]);
 
   useEffect(() => {
     if (explicit) return;
@@ -57,15 +62,8 @@ export function ThemeToggle() {
   }, [explicit]);
 
   const toggle = () => {
-    setTheme((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      setExplicit(true);
-      applyTheme(next);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEY, next);
-      }
-      return next;
-    });
+    setExplicit(true);
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   const isDark = theme === 'dark';

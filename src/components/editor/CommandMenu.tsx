@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import { Editor } from '@tiptap/react';
 
 import { Range } from '@tiptap/core';
@@ -25,10 +25,7 @@ export type CommandMenuRef = {
 export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
     ({ items, command }, ref) => {
         const [selectedIndex, setSelectedIndex] = useState(0);
-
-        useEffect(() => {
-            setSelectedIndex(0);
-        }, [items]);
+        const activeIndex = items.length === 0 ? -1 : Math.min(selectedIndex, items.length - 1);
 
         const selectItem = (index: number) => {
             const item = items[index];
@@ -39,18 +36,22 @@ export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
 
         useImperativeHandle(ref, () => ({
             onKeyDown: ({ event }) => {
+                if (items.length === 0) {
+                    return false;
+                }
+
                 if (event.key === 'ArrowUp') {
-                    setSelectedIndex((selectedIndex + items.length - 1) % items.length);
+                    setSelectedIndex((prev) => (prev + items.length - 1) % items.length);
                     return true;
                 }
 
                 if (event.key === 'ArrowDown') {
-                    setSelectedIndex((selectedIndex + 1) % items.length);
+                    setSelectedIndex((prev) => (prev + 1) % items.length);
                     return true;
                 }
 
                 if (event.key === 'Enter') {
-                    selectItem(selectedIndex);
+                    selectItem(activeIndex);
                     return true;
                 }
 
@@ -66,7 +67,7 @@ export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
                             <button
                                 key={index}
                                 type="button"
-                                className={`w-full flex items-start gap-3 px-3 py-2 rounded-md text-left transition-colors ${index === selectedIndex
+                                className={`w-full flex items-start gap-3 px-3 py-2 rounded-md text-left transition-colors ${index === activeIndex
                                     ? 'bg-[color:var(--klaud-accent)]/[0.15] text-[color:var(--klaud-accent)]'
                                     : 'klaud-text hover:bg-[color:var(--klaud-border)]'
                                     }`}

@@ -41,6 +41,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+button:not(:disabled),
+a[href],
+[role='button']:not([aria-disabled='true']),
+summary,
+label[for],
+input[type='button']:not(:disabled),
+input[type='submit']:not(:disabled),
+input[type='reset']:not(:disabled),
+input[type='checkbox']:not(:disabled),
+input[type='radio']:not(:disabled),
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
 .klaud-bg {
   background-color: var(--klaud-bg);
 }
@@ -97,4 +118,278 @@ body {
 .ProseMirror li::marker {
   color: var(--klaud-accent);
   font-weight: 600;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6,
+.prose .ProseMirror h1,
+.prose .ProseMirror h2,
+.prose .ProseMirror h3,
+.prose .ProseMirror h4,
+.prose .ProseMirror h5,
+.prose .ProseMirror h6 {
+  color: var(--klaud-text);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 1.35rem 0 0.65rem;
+}
+
+.ProseMirror h1,
+.prose .ProseMirror h1 {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  margin-top: 1.6rem;
+}
+
+.ProseMirror h2,
+.prose .ProseMirror h2 {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  margin-top: 1.45rem;
+}
+
+.ProseMirror h3,
+.prose .ProseMirror h3 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin-top: 1.25rem;
+}
+
+.ProseMirror p,
+.prose .ProseMirror p {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+
+.ProseMirror p {
+  margin: 0.5rem 0;
+}
+
+.ProseMirror blockquote,
+.prose .ProseMirror blockquote {
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--klaud-accent);
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--klaud-accent) 10%, var(--klaud-surface));
+  color: color-mix(in srgb, var(--klaud-text) 90%, var(--klaud-muted));
+  font-style: italic;
+}
+
+.ProseMirror blockquote p,
+.prose .ProseMirror blockquote p {
+  margin: 0.25rem 0;
+  line-height: 1.6;
+}
+
+.ProseMirror pre,
+.prose .ProseMirror pre {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--klaud-border);
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--klaud-surface) 80%, #0f172a 20%);
+  color: var(--klaud-text);
+  overflow-x: auto;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.ProseMirror pre code,
+.prose .ProseMirror pre code {
+  display: block;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.ProseMirror code,
+.prose .ProseMirror code {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: color-mix(in srgb, var(--klaud-border) 75%, transparent);
+  border-radius: 0.35rem;
+  padding: 0.12em 0.35em;
+}
+
+.ProseMirror [data-tag-chip] {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  padding: 0.1rem 0.65rem;
+  margin: 0 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  vertical-align: baseline;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.ProseMirror [data-tag-chip] .tag-chip-text {
+  text-transform: uppercase;
+  margin-left: 0.1rem;
+}
+
+.ProseMirror [data-tag-chip]:hover {
+  filter: brightness(1.05);
+  transform: translateY(-0.5px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.ProseMirror [data-tag-chip]:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--klaud-accent) 60%, transparent);
+  outline-offset: 1px;
+}
+
+.ProseMirror [data-tag-chip][data-color='blue'] {
+  background: color-mix(in srgb, var(--klaud-accent) 18%, var(--klaud-glass));
+  border-color: color-mix(in srgb, var(--klaud-accent) 40%, var(--klaud-border));
+  color: color-mix(in srgb, var(--klaud-accent) 40%, var(--klaud-text));
+}
+
+.ProseMirror [data-tag-chip][data-color='green'] {
+  background: color-mix(in srgb, #10b981 18%, var(--klaud-glass));
+  border-color: color-mix(in srgb, #10b981 40%, var(--klaud-border));
+  color: #059669;
+}
+
+.ProseMirror [data-tag-chip][data-color='yellow'] {
+  background: color-mix(in srgb, #f59e0b 20%, var(--klaud-glass));
+  border-color: color-mix(in srgb, #f59e0b 40%, var(--klaud-border));
+  color: #d97706;
+}
+
+.ProseMirror [data-tag-chip][data-color='red'] {
+  background: color-mix(in srgb, #ef4444 18%, var(--klaud-glass));
+  border-color: color-mix(in srgb, #ef4444 40%, var(--klaud-border));
+  color: #dc2626;
+}
+
+.ProseMirror [data-tag-chip][data-color='purple'] {
+  background: color-mix(in srgb, #8b5cf6 18%, var(--klaud-glass));
+  border-color: color-mix(in srgb, #8b5cf6 40%, var(--klaud-border));
+  color: #7c3aed;
+}
+
+.ProseMirror .date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid var(--klaud-border);
+  padding: 0.1rem 0.65rem;
+  margin: 0 0.12rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--klaud-accent) 12%, var(--klaud-surface));
+  color: var(--klaud-text);
+  white-space: nowrap;
+  vertical-align: baseline;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ProseMirror .date-chip::before {
+  content: '📅';
+  font-size: 0.9em;
+}
+
+.ProseMirror .date-chip.ProseMirror-selectednode {
+  outline: 2px solid var(--klaud-accent);
+  outline-offset: 1px;
+}
+
+.ProseMirror ul[data-type='taskList'] {
+  list-style: none;
+  margin: 1rem 0;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-type='taskList'] li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.35rem 0;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-type='taskList'] li::marker {
+  content: '';
+}
+
+.ProseMirror ul[data-type='taskList'] li>label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+  user-select: none;
+}
+
+.ProseMirror ul[data-type='taskList'] li>label input[type='checkbox'] {
+  appearance: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid color-mix(in srgb, var(--klaud-accent) 65%, var(--klaud-border));
+  border-radius: 0.3rem;
+  background-color: var(--klaud-surface);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.ProseMirror ul[data-type='taskList'] li>label input[type='checkbox']::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.55rem;
+  clip-path: polygon(14% 54%, 0 68%, 40% 100%, 100% 25%, 84% 12%, 38% 70%);
+  transform: scale(0);
+  transform-origin: center;
+  transition: transform 120ms ease;
+  background: #ffffff;
+}
+
+.ProseMirror ul[data-type='taskList'] li>label input[type='checkbox']:checked {
+  background-color: var(--klaud-accent);
+  border-color: var(--klaud-accent);
+}
+
+.ProseMirror ul[data-type='taskList'] li>label input[type='checkbox']:checked::before {
+  transform: scale(1);
+}
+
+.ProseMirror ul[data-type='taskList'] li>label input[type='checkbox']:hover {
+  transform: translateY(-1px);
+}
+
+.ProseMirror ul[data-type='taskList'] li>label input[type='checkbox']:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--klaud-accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.ProseMirror ul[data-type='taskList'] li>div {
+  flex: 1;
+  min-width: 0;
+}
+
+.ProseMirror ul[data-type='taskList'] li>div p {
+  margin: 0;
+}
+
+.ProseMirror ul[data-type='taskList'] li[data-checked='true']>div p {
+  color: var(--klaud-muted);
+  text-decoration: line-through;
 }

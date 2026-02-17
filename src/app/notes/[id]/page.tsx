@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { NotesDrawer } from '@/components/notes/NotesDrawer';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { db } from '@/lib/firebase';
@@ -9,11 +9,14 @@ import { Editor, EditorContent, useEditor, JSONContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import debounce from 'lodash.debounce';
 import { AbbrevExpand } from '@/editor/AbbrevExpand';
 import { SlashCommand } from '@/lib/editor/SlashCommand';
+import { TagChip } from '@/editor/TagChip';
+import { DateChip } from '@/editor/DateChip';
+import { DatePicker } from '@/components/editor/DatePicker';
 
 type RouteParams = { id: string };
+type SyncStatus = 'loading' | 'syncing' | 'synced' | 'error';
 
 export default function NotePage({ params }: { params: Promise<RouteParams> }) {
   const { user, loading: authLoading } = useAuthGuard();
@@ -21,22 +24,59 @@ export default function NotePage({ params }: { params: Promise<RouteParams> }) {
   const [title, setTitle] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('loading');
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const hasHydratedContentRef = useRef(false);
+  const changeVersionRef = useRef(0);
+  const savedVersionRef = useRef(0);
+  const contentSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let active = true;
     params.then((resolved) => {
-      if (active) setNoteId(resolved.id);
+      if (active) {
+        setNoteId(resolved.id);
+        setMenuOpen(false);
+        setSyncStatus('loading');
+      }
     });
     return () => {
       active = false;
     };
   }, [params]);
 
+  useEffect(() => {
+    hasHydratedContentRef.current = false;
+    changeVersionRef.current = 0;
+    savedVersionRef.current = 0;
+  }, [noteId]);
+
+  const markDirty = useCallback(() => {
+    changeVersionRef.current += 1;
+    setSyncStatus('syncing');
+    return changeVersionRef.current;
+  }, []);
+
+  const markSaved = useCallback((version: number) => {
+    if (version > savedVersionRef.current) {
+      savedVersionRef.current = version;
+    }
+    if (savedVersionRef.current >= changeVersionRef.current) {
+      setSyncStatus('synced');
+      return;
+    }
+    setSyncStatus('syncing');
+  }, []);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
+      TagChip,
+      DateChip,
       SlashCommand,
       AbbrevExpand,
     ],
@@ -55,81 +95,115 @@ export default function NotePage({ params }: { params: Promise<RouteParams> }) {
         const data = snapshot.data();
         setTitle(data.title || '');
 
-        // Only update editor if content is different to avoid cursor jumps
+        // Avoid re-applying content while actively typing; this prevents cursor jumps.
         const newContent = data.content_json || { type: 'doc', content: [] };
         const currentContent = editor.getJSON();
+        const isInitialHydration = !hasHydratedContentRef.current;
+        const shouldApplyRemoteContent = isInitialHydration || !editor.isFocused;
 
-        if (JSON.stringify(newContent) !== JSON.stringify(currentContent)) {
+        if (shouldApplyRemoteContent && JSON.stringify(newContent) !== JSON.stringify(currentContent)) {
           editor.commands.setContent(newContent, { emitUpdate: false });
         }
 
+        hasHydratedContentRef.current = true;
         setReady(true);
+        if (changeVersionRef.current === savedVersionRef.current) {
+          setSyncStatus('synced');
+        }
       }
     });
 
     return () => unsubscribe();
   }, [noteId, editor, user]);
 
-  const saveContent = useMemo(
-    () =>
-      debounce(async (content: JSONContent) => {
-        if (!noteId || !user) return;
+  const saveContentNow = useCallback(async ({ content, version }: { content: JSONContent; version: number }) => {
+    if (!noteId || !user) return;
 
-        try {
-          const noteRef = doc(db, 'notes', noteId);
-          await updateDoc(noteRef, {
-            content_json: content,
-            updated_at: serverTimestamp(),
-          });
-        } catch (error) {
-          console.error('Failed to save content:', error);
-        }
-      }, 800),
-    [noteId, user]
-  );
+    try {
+      const noteRef = doc(db, 'notes', noteId);
+      await updateDoc(noteRef, {
+        content_json: content,
+        updated_at: serverTimestamp(),
+      });
+      markSaved(version);
+    } catch (error) {
+      console.error('Failed to save content:', error);
+      setSyncStatus('error');
+    }
+  }, [noteId, user, markSaved]);
 
-  const saveTitle = useMemo(
-    () =>
-      debounce(async (newTitle: string) => {
-        if (!noteId || !user) return;
+  const saveTitleNow = useCallback(async ({ newTitle, version }: { newTitle: string; version: number }) => {
+    if (!noteId || !user) return;
 
-        try {
-          const noteRef = doc(db, 'notes', noteId);
-          await updateDoc(noteRef, {
-            title: newTitle,
-            updated_at: serverTimestamp(),
-          });
-        } catch (error) {
-          console.error('Failed to save title:', error);
-        }
-      }, 600),
-    [noteId, user]
-  );
+    try {
+      const noteRef = doc(db, 'notes', noteId);
+      await updateDoc(noteRef, {
+        title: newTitle,
+        updated_at: serverTimestamp(),
+      });
+      markSaved(version);
+    } catch (error) {
+      console.error('Failed to save title:', error);
+      setSyncStatus('error');
+    }
+  }, [noteId, user, markSaved]);
+
+  const scheduleContentSave = useCallback((payload: { content: JSONContent; version: number }) => {
+    if (contentSaveTimeoutRef.current) {
+      clearTimeout(contentSaveTimeoutRef.current);
+    }
+    contentSaveTimeoutRef.current = setTimeout(() => {
+      void saveContentNow(payload);
+    }, 800);
+  }, [saveContentNow]);
+
+  const scheduleTitleSave = useCallback((payload: { newTitle: string; version: number }) => {
+    if (titleSaveTimeoutRef.current) {
+      clearTimeout(titleSaveTimeoutRef.current);
+    }
+    titleSaveTimeoutRef.current = setTimeout(() => {
+      void saveTitleNow(payload);
+    }, 600);
+  }, [saveTitleNow]);
 
   // Listen to editor updates
   useEffect(() => {
     if (!editor) return;
 
     const handler = ({ editor }: { editor: Editor }) => {
-      saveContent(editor.getJSON());
+      const version = markDirty();
+      scheduleContentSave({ content: editor.getJSON(), version });
     };
 
     editor.on('update', handler);
     return () => {
       editor.off('update', handler);
-      (saveContent as unknown as { cancel: () => void }).cancel();
+      if (contentSaveTimeoutRef.current) {
+        clearTimeout(contentSaveTimeoutRef.current);
+      }
     };
-  }, [editor, saveContent]);
+  }, [editor, scheduleContentSave, markDirty]);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const handler = () => {
+      setDatePickerOpen(true);
+    };
+
+    (editor as any).on('openDatePicker', handler);
+    return () => {
+      (editor as any).off('openDatePicker', handler);
+    };
+  }, [editor]);
 
   useEffect(() => {
     return () => {
-      (saveTitle as unknown as { cancel: () => void }).cancel();
+      if (titleSaveTimeoutRef.current) {
+        clearTimeout(titleSaveTimeoutRef.current);
+      }
     };
-  }, [saveTitle]);
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [noteId]);
+  }, []);
 
   if (authLoading || !noteId) {
     return <div className="klaud-bg min-h-screen" />;
@@ -137,17 +211,17 @@ export default function NotePage({ params }: { params: Promise<RouteParams> }) {
 
   return (
     <div className="flex h-screen flex-col klaud-bg font-sans selection:bg-[color:var(--klaud-accent)]/30">
-      <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between klaud-border px-4 backdrop-blur-md bg-[color:var(--klaud-glass)] border-b shadow-sm transition-all duration-300">
-        <div className="flex flex-1 items-center gap-3 min-w-0">
+      <header className="sticky top-0 z-30 flex h-[4.6rem] shrink-0 items-center justify-between klaud-border px-3 sm:px-4 backdrop-blur-xl bg-[color:var(--klaud-glass)]/95 border-b shadow-sm transition-all duration-300">
+        <div className="flex flex-1 items-center gap-4 min-w-0">
           <button
             type="button"
-            className="group flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-[color:var(--klaud-surface)] border klaud-border shadow-sm transition-all hover:border-[color:var(--klaud-accent)] active:scale-95"
+            className="group flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[color:var(--klaud-surface)] border klaud-border shadow-sm transition-all hover:border-[color:var(--klaud-accent)] hover:shadow-md active:scale-95"
             onClick={() => setMenuOpen((open) => !open)}
             aria-label="Toggle drawer"
           >
             <svg
-              className={`h-5 w-5 klaud-muted transition-colors group-hover:text-[color:var(--klaud-accent)] ${menuOpen ? 'rotate-90' : ''}`}
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+              className={`h-[1.2rem] w-[1.2rem] klaud-muted transition-colors duration-200 group-hover:text-[color:var(--klaud-accent)] ${menuOpen ? 'rotate-90' : ''}`}
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25"
             >
               <line x1="4" y1="6" x2="20" y2="6" strokeLinecap="round" />
               <line x1="4" y1="12" x2="16" y2="12" strokeLinecap="round" />
@@ -155,29 +229,36 @@ export default function NotePage({ params }: { params: Promise<RouteParams> }) {
             </svg>
           </button>
 
-          <div className="flex-1 min-w-0 max-w-2xl px-1">
+          <div className="flex-1 min-w-0 max-w-2xl px-1 py-1 flex flex-col gap-1.5">
             <input
-              className="w-full border-none bg-transparent text-xl font-bold klaud-text tracking-tight placeholder:opacity-30 focus:outline-none focus:ring-0 truncate"
+              className={`w-full border-none text-[1.35rem] font-bold tracking-tight placeholder:opacity-30 focus:outline-none focus:ring-0 truncate rounded-lg px-2.5 py-1 -mx-2.5 transition-colors ${isTitleFocused
+                ? 'bg-[color:var(--klaud-accent)]/9 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--klaud-accent)_40%,transparent)]'
+                : 'bg-transparent'
+                }`}
               value={title}
               onChange={(event) => {
                 const value = event.target.value;
                 setTitle(value);
-                saveTitle(value);
+                const version = markDirty();
+                scheduleTitleSave({ newTitle: value, version });
               }}
+              onFocus={() => setIsTitleFocused(true)}
+              onBlur={() => setIsTitleFocused(false)}
               placeholder="Start your masterpiece..."
             />
             {ready && (
-              <div className="flex items-center gap-1.5 mt-[-4px]">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9px] uppercase tracking-widest klaud-muted font-bold opacity-60">Synced</span>
+              <div className="flex items-center gap-1.5 min-h-3.5 pl-0.5">
+                <div className={`h-1.5 w-1.5 rounded-full ${syncStatus === 'syncing'
+                  ? 'bg-amber-500 animate-pulse'
+                  : syncStatus === 'error'
+                    ? 'bg-rose-500'
+                    : 'bg-emerald-500'
+                  }`} />
+                <span className="text-[9px] uppercase tracking-widest klaud-muted font-bold opacity-60">
+                  {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'error' ? 'Sync failed' : 'Synced'}
+                </span>
               </div>
             )}
-          </div>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-3 shrink-0 ml-4">
-          <div className="text-[10px] uppercase tracking-widest klaud-muted font-bold px-3 py-1.5 rounded-full border klaud-border bg-[color:var(--klaud-surface)]">
-            Zen Mode
           </div>
         </div>
       </header>
@@ -187,7 +268,7 @@ export default function NotePage({ params }: { params: Promise<RouteParams> }) {
 
         <main className="flex-1 relative overflow-hidden flex flex-col">
           <div
-            className="w-full h-full overflow-y-auto px-4 pb-20 pt-8"
+            className="w-full h-full overflow-y-auto px-3 sm:px-4 pb-20 pt-8"
             onMouseDown={(event) => {
               if (!editor) return;
               const target = event.target as HTMLElement | null;
@@ -206,6 +287,16 @@ export default function NotePage({ params }: { params: Promise<RouteParams> }) {
           </div>
         </main>
       </div>
+
+      {datePickerOpen && (
+        <DatePicker
+          onSelect={(date) => {
+            editor?.chain().focus().setDateChip({ date: date.toISOString() }).run();
+            setDatePickerOpen(false);
+          }}
+          onClose={() => setDatePickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

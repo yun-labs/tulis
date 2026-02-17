@@ -9,5 +9,13 @@ service cloud.firestore {
       // Users can only read, update, or delete their own notes
       allow read, update, delete: if request.auth != null && resource.data.owner == request.auth.uid;
     }
+
+    match /note_folders/{folderId} {
+      // Users can only create folders where they are the owner
+      allow create: if request.auth != null && request.resource.data.owner == request.auth.uid;
+
+      // Users can only read, update, or delete their own folders
+      allow read, update, delete: if request.auth != null && resource.data.owner == request.auth.uid;
+    }
   }
 }
