@@ -191,26 +191,26 @@ export default function Login() {
   }, [router]);
 
   return (
-    <div className="klaud-bg relative flex min-h-screen items-start justify-center overflow-y-auto px-4 pt-4 sm:pt-8 lg:pt-12 pb-8">
+    <div className="tulis-bg relative flex min-h-screen items-start justify-center overflow-y-auto px-4 pt-4 sm:pt-8 lg:pt-12 pb-8">
       <div className="absolute right-4 top-4 z-20">
         <ThemeToggle />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-7 flex flex-col items-center gap-1 text-center">
-          <h1 className="text-4xl font-black tracking-tight lowercase klaud-text">tulis</h1>
+          <h1 className="text-4xl font-black tracking-tight lowercase tulis-text">tulis</h1>
           <p
-            className="text-[11px] uppercase tracking-[0.22em] klaud-muted opacity-70"
+            className="text-[11px] uppercase tracking-[0.22em] tulis-muted opacity-70"
             style={{ fontFamily: 'var(--font-geist-mono)' }}
           >
             by yun
           </p>
         </div>
 
-        <div className="klaud-surface w-full space-y-5 rounded-[var(--rLg)] border klaud-border p-6 sm:p-7">
+        <div className="tulis-surface w-full space-y-5 rounded-[var(--rLg)] border tulis-border p-6 sm:p-7">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight klaud-text">{isSignUp ? 'Create account' : 'Sign in'}</h2>
-            <p className="text-sm klaud-muted opacity-70">
+            <h2 className="text-2xl font-bold tracking-tight tulis-text">{isSignUp ? 'Create account' : 'Sign in'}</h2>
+            <p className="text-sm tulis-muted opacity-70">
               {isSignUp ? 'Start writing in seconds.' : 'Continue to your notes.'}
             </p>
           </div>
@@ -219,7 +219,7 @@ export default function Login() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-[var(--rMd)] border klaud-border bg-[color:var(--surface)] py-3 text-sm font-semibold klaud-text transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-[var(--rMd)] border tulis-border bg-[color:var(--surface)] py-3 text-sm font-semibold tulis-text transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -230,12 +230,12 @@ export default function Login() {
             Continue with Google
           </button>
 
-          <p className="px-1 text-[11px] font-medium uppercase tracking-[0.12em] klaud-muted">Or use email</p>
+          <p className="px-1 text-[11px] font-medium uppercase tracking-[0.12em] tulis-muted">Or use email</p>
 
           <form className="space-y-4" onSubmit={handleLogin}>
             {isSignUp && (
               <div className="space-y-1.5">
-                <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] klaud-muted" htmlFor="name">
+                <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="name">
                   Name
                 </label>
                 <input
@@ -244,17 +244,17 @@ export default function Login() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm klaud-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)]"
+                  className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm tulis-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none"
                   placeholder="Your name"
                 />
                 {name.length > 0 && !trimmedName && (
-                  <p className="px-1 text-xs klaud-muted">Name is required.</p>
+                  <p className="px-1 text-xs tulis-muted">Name is required.</p>
                 )}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] klaud-muted" htmlFor="email">
+              <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="email">
                 Email
               </label>
               <input
@@ -263,16 +263,16 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm klaud-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)]"
+                className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm tulis-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none"
                 placeholder="you@example.com"
               />
               {email.length > 0 && !hasEmailShape && (
-                <p className="px-1 text-xs klaud-muted">Enter a valid email address.</p>
+                <p className="px-1 text-xs tulis-muted">Enter a valid email address.</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] klaud-muted" htmlFor="password">
+              <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="password">
                 Password
               </label>
               <input
@@ -281,16 +281,16 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm klaud-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)]"
+                className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm tulis-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none"
                 placeholder="••••••••"
               />
               {passwordTooShort && (
-                <p className="px-1 text-xs klaud-muted">Use at least 6 characters.</p>
+                <p className="px-1 text-xs tulis-muted">Use at least 6 characters.</p>
               )}
               {!isSignUp && (
                 <button
                   type="button"
-                  className="pl-1 text-xs font-medium klaud-muted transition-colors hover:text-[color:var(--accent)]"
+                  className="pl-1 text-xs font-medium tulis-muted transition-colors hover:text-[color:var(--accent)]"
                   onClick={() => {
                     setResetEmail(trimmedEmail);
                     setResetOpen(true);
@@ -305,7 +305,7 @@ export default function Login() {
 
             {isSignUp && (
               <div className="space-y-1.5">
-                <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] klaud-muted" htmlFor="confirm-password">
+                <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="confirm-password">
                   Confirm password
                 </label>
                 <input
@@ -314,17 +314,17 @@ export default function Login() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm klaud-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)]"
+                  className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm tulis-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none"
                   placeholder="••••••••"
                 />
                 {confirmMismatch && (
-                  <p className="px-1 text-xs klaud-muted">Passwords do not match.</p>
+                  <p className="px-1 text-xs tulis-muted">Passwords do not match.</p>
                 )}
               </div>
             )}
 
             {error ? (
-              <div className="rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface2)] p-3 text-xs font-medium klaud-text">
+              <div className="rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface2)] p-3 text-xs font-medium tulis-text">
                 {error}
               </div>
             ) : null}
@@ -345,7 +345,7 @@ export default function Login() {
                   setConfirmPassword('');
                   setError(null);
                 }}
-                className="text-xs font-medium klaud-muted transition-colors hover:text-[color:var(--text)]"
+                className="text-xs font-medium tulis-muted transition-colors hover:text-[color:var(--text)]"
               >
                 {isSignUp ? 'Already have an account? Sign in' : 'New to tulis? Create an account'}
               </button>
@@ -357,11 +357,11 @@ export default function Login() {
       {/* Password Reset Modal */}
       {resetOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4 backdrop-blur-sm">
-          <div className="klaud-surface w-full max-w-sm rounded-[var(--rLg)] border klaud-border p-6 sm:p-7">
-            <h2 className="text-xl font-semibold tracking-tight klaud-text">Reset password</h2>
+          <div className="tulis-surface w-full max-w-sm rounded-[var(--rLg)] border tulis-border p-6 sm:p-7">
+            <h2 className="text-xl font-semibold tracking-tight tulis-text">Reset password</h2>
             {resetSent ? (
               <div className="mt-2 space-y-5">
-                <p className="text-sm leading-relaxed klaud-muted">
+                <p className="text-sm leading-relaxed tulis-muted">
                   If an account exists for <span className="font-semibold text-[color:var(--text)]">{resetEmail}</span>, you&apos;ll receive a reset email shortly.
                 </p>
                 <button
@@ -374,7 +374,7 @@ export default function Login() {
             ) : (
               <form className="mt-4 space-y-4" onSubmit={handlePasswordReset}>
                 <div className="space-y-1.5">
-                  <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] klaud-muted" htmlFor="reset-email">
+                  <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="reset-email">
                     Email address
                   </label>
                   <input
@@ -383,12 +383,12 @@ export default function Login() {
                     required
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm klaud-text placeholder:text-[color:var(--text3)] focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)]"
+                    className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm tulis-text placeholder:text-[color:var(--text3)] focus:border-[color:var(--accent)] focus:outline-none"
                     placeholder="you@example.com"
                   />
                 </div>
                 {resetError && (
-                  <div className="rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface2)] p-3 text-xs font-medium klaud-text">
+                  <div className="rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface2)] p-3 text-xs font-medium tulis-text">
                     {resetError}
                   </div>
                 )}
@@ -396,7 +396,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setResetOpen(false)}
-                    className="flex-1 rounded-[var(--rMd)] border border-[color:var(--border)] bg-transparent py-3 text-sm font-semibold klaud-text transition-colors hover:bg-[color:var(--surface2)]"
+                    className="flex-1 rounded-[var(--rMd)] border border-[color:var(--border)] bg-transparent py-3 text-sm font-semibold tulis-text transition-colors hover:bg-[color:var(--surface2)]"
                   >
                     Cancel
                   </button>

@@ -62,7 +62,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-[color:var(--focusRing)] klaud-bg klaud-text`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-[color:var(--focusRing)] tulis-bg tulis-text`}
       >
         <PwaProvider>
           {children}

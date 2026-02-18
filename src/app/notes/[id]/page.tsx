@@ -448,11 +448,11 @@ export default function NotePage() {
   const hasTags = tags.length > 0;
 
   if (!noteId || (authLoading && !user)) {
-    return <div className="klaud-bg min-h-screen" />;
+    return <div className="tulis-bg min-h-screen" />;
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden klaud-bg font-sans selection:bg-[color:var(--focusRing)]">
+    <div className="flex h-screen w-full overflow-hidden tulis-bg font-sans selection:bg-[color:var(--focusRing)]">
       <NotesDrawer
         isSidebarOpen={isSidebarOpen}
         currentNoteId={noteId ?? ''}
@@ -460,18 +460,18 @@ export default function NotePage() {
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="shrink-0 border-b klaud-border bg-[color:var(--surface)] px-3 py-2.5 sm:px-4">
+        <header className="shrink-0 border-b tulis-border bg-[color:var(--surface)] px-3 py-2.5 sm:px-4">
           <div className="mx-auto flex min-w-0 max-w-[840px] items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <button
                 type="button"
-                className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--rSm)] border klaud-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--accent)] hover:bg-[color:var(--surface2)]"
+                className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--rSm)] border tulis-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--accent)] hover:bg-[color:var(--surface2)]"
                 onClick={() => setIsSidebarOpen((open) => !open)}
                 aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               >
                 {isSidebarOpen ? (
                   <svg
-                    className="h-4 w-4 klaud-muted transition-colors group-hover:text-[color:var(--accent)]"
+                    className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--accent)]"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -481,7 +481,7 @@ export default function NotePage() {
                   </svg>
                 ) : (
                   <svg
-                    className="h-4 w-4 klaud-muted transition-colors group-hover:text-[color:var(--accent)]"
+                    className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--accent)]"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -496,9 +496,9 @@ export default function NotePage() {
 
               <input
                 ref={titleInputRef}
-                className={`min-w-0 flex-1 truncate rounded-[var(--rSm)] border-none px-2 py-1.5 text-[1.18rem] font-semibold tracking-tight placeholder:opacity-35 transition-colors focus:outline-none focus:ring-0 ${isTitleFocused
-                  ? 'bg-[color:var(--surface2)] ring-1 ring-[color:var(--accent)]'
-                  : 'bg-transparent'
+                className={`min-w-0 flex-1 truncate rounded-[var(--rSm)] border px-2 py-1.5 text-[1.18rem] font-semibold tracking-tight placeholder:opacity-35 transition-colors focus:outline-none ${isTitleFocused
+                  ? 'border-[color:var(--accent)] bg-[color:var(--surface2)]'
+                  : 'border-transparent bg-transparent'
                   }`}
                 value={title}
                 onChange={(event) => {
@@ -527,7 +527,7 @@ export default function NotePage() {
                   }}
                   className={`inline-flex h-8 rounded-[var(--rSm)] border text-[10px] font-semibold uppercase tracking-[0.1em] transition-colors ${hasTags ? 'items-center gap-1 px-2' : 'w-8 items-center justify-center px-0'} ${isTagPopoverOpen
                     ? 'border-[color:var(--accent)] text-[color:var(--accent)] bg-[color:var(--surface2)]'
-                    : 'border-[color:var(--border)] klaud-muted hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]'
+                    : 'border-[color:var(--border)] tulis-muted hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]'
                     }`}
                   aria-label="Manage tags"
                   title="Manage tags"
@@ -542,14 +542,14 @@ export default function NotePage() {
                 {isTagPopoverOpen && (
                   <div className="absolute right-0 top-10 z-50 w-[300px] max-w-[calc(100vw-1rem)] rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] p-3 shadow-sm">
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] klaud-muted">Tags</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] tulis-muted">Tags</p>
                       {hasTags && (
                         <button
                           type="button"
                           onClick={() => {
                             void saveTagsNow([]);
                           }}
-                          className="text-[10px] font-medium uppercase tracking-[0.08em] klaud-muted transition-colors hover:text-[color:var(--text)]"
+                          className="text-[10px] font-medium uppercase tracking-[0.08em] tulis-muted transition-colors hover:text-[color:var(--text)]"
                         >
                           Clear
                         </button>
@@ -561,7 +561,7 @@ export default function NotePage() {
                         {tags.map((tag) => (
                           <span
                             key={tag}
-                            className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border2)] bg-[color:var(--surface2)] px-2 py-1 text-xs font-medium klaud-text"
+                            className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border2)] bg-[color:var(--surface2)] px-2 py-1 text-xs font-medium tulis-text"
                           >
                             #{tag}
                             <button
@@ -569,7 +569,7 @@ export default function NotePage() {
                               onClick={() => {
                                 void saveTagsNow(tags.filter((item) => item !== tag));
                               }}
-                              className="rounded-full p-0.5 klaud-muted transition-colors hover:text-[color:var(--text)]"
+                              className="rounded-full p-0.5 tulis-muted transition-colors hover:text-[color:var(--text)]"
                               aria-label={`Remove ${tag} tag`}
                             >
                               <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
@@ -582,7 +582,7 @@ export default function NotePage() {
                       </div>
                     )}
 
-                    <div className="flex items-center gap-1.5">
+                    <div>
                       <input
                         ref={tagInputRef}
                         value={tagInput}
@@ -602,18 +602,10 @@ export default function NotePage() {
                             void saveTagsNow(tags.slice(0, -1));
                           }
                         }}
-                        placeholder={tags.length >= 10 ? 'Tag limit reached' : 'Add tag'}
+                        placeholder={tags.length >= 10 ? 'Tag limit reached' : 'Press enter to add tag'}
                         disabled={tags.length >= 10}
-                        className="h-8 min-w-0 flex-1 rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] px-2.5 text-xs klaud-text placeholder:text-[color:var(--text3)] focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)] disabled:opacity-50"
+                        className="h-8 w-full rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] px-2.5 text-xs tulis-text placeholder:text-[color:var(--text3)] focus:border-[color:var(--accent)] focus:outline-none disabled:opacity-50"
                       />
-                      <button
-                        type="button"
-                        onClick={addTagFromInput}
-                        disabled={tags.length >= 10}
-                        className="inline-flex h-8 items-center rounded-[var(--rSm)] border border-[color:var(--border)] px-2 text-[10px] font-semibold uppercase tracking-[0.1em] klaud-muted transition-colors hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)] disabled:opacity-50"
-                      >
-                        Add
-                      </button>
                     </div>
 
                     {tagSuggestions.length > 0 && (
@@ -627,7 +619,7 @@ export default function NotePage() {
                               void saveTagsNow([...tags, tag]);
                               setTagInput('');
                             }}
-                            className="w-full rounded-[var(--rSm)] px-2 py-1 text-left text-xs klaud-muted transition-colors hover:bg-[color:var(--surface)] hover:text-[color:var(--text)]"
+                            className="w-full rounded-[var(--rSm)] px-2 py-1 text-left text-xs tulis-muted transition-colors hover:bg-[color:var(--surface)] hover:text-[color:var(--text)]"
                           >
                             #{tag}
                           </button>
@@ -645,7 +637,7 @@ export default function NotePage() {
                 }}
                 className={`inline-flex h-8 w-8 items-center justify-center rounded-[var(--rSm)] border transition-colors ${pinned
                   ? 'border-[color:var(--accent)] text-[color:var(--accent)] bg-[color:var(--surface2)]'
-                  : 'border-[color:var(--border)] klaud-muted hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]'
+                  : 'border-[color:var(--border)] tulis-muted hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]'
                   }`}
                 aria-label={pinned ? 'Unpin note' : 'Pin note'}
                 title={pinned ? 'Unpin note' : 'Pin note'}
@@ -656,7 +648,7 @@ export default function NotePage() {
               </button>
 
               {ready && (
-                <span className="hidden shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] klaud-muted sm:inline-flex">
+                <span className="hidden shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] tulis-muted sm:inline-flex">
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${syncStatus === 'syncing'
                       ? 'bg-[color:var(--accent)]'
@@ -694,7 +686,7 @@ export default function NotePage() {
           <div className="mx-auto min-h-full max-w-[840px] min-w-0">
             <EditorContent
               editor={editor}
-              className="prose prose-lg dark:prose-invert max-w-none focus:outline-none klaud-text"
+              className="prose prose-lg dark:prose-invert max-w-none focus:outline-none tulis-text"
             />
           </div>
         </main>

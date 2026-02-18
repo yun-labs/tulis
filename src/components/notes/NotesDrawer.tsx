@@ -214,21 +214,21 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
             className="block min-w-0 pr-14"
           >
             <div className="flex items-center gap-2">
-              <p className="min-w-0 flex-1 truncate text-sm font-semibold klaud-text">{note.title}</p>
-              <p className="shrink-0 text-[9px] uppercase tracking-wide klaud-muted">
+              <p className="min-w-0 flex-1 truncate text-sm font-semibold tulis-text">{note.title}</p>
+              <p className="shrink-0 text-[9px] uppercase tracking-wide tulis-muted">
                 {note.updatedAt?.toDate
                   ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(note.updatedAt.toDate())
                   : 'Recent'}
               </p>
             </div>
             <div className="mt-0.5 flex items-center gap-2">
-              <p className="min-w-0 flex-1 truncate text-xs klaud-muted">{notePreview(note.content)}</p>
+              <p className="min-w-0 flex-1 truncate text-xs tulis-muted">{notePreview(note.content)}</p>
               {note.tags.length > 0 && (
                 <div className="flex items-center gap-1">
                   {note.tags.slice(0, 2).map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-[color:var(--border2)] bg-[color:var(--surface2)] px-1.5 py-0.5 text-[9px] font-medium klaud-muted"
+                      className="rounded-full border border-[color:var(--border2)] bg-[color:var(--surface2)] px-1.5 py-0.5 text-[9px] font-medium tulis-muted"
                     >
                       #{tag}
                     </span>
@@ -246,7 +246,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
               }}
               className={`rounded-[var(--rSm)] p-1 transition-colors ${note.pinned
                 ? 'text-[color:var(--accent)] bg-[color:var(--surface)]'
-                : 'klaud-muted hover:bg-[color:var(--surface)] hover:text-[color:var(--text)]'
+                : 'tulis-muted hover:bg-[color:var(--surface)] hover:text-[color:var(--text)]'
                 }`}
               aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
               title={note.pinned ? 'Unpin note' : 'Pin note'}
@@ -262,7 +262,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
                 void handleDelete(note.id);
               }}
               disabled={deletingId === note.id}
-              className="rounded-[var(--rSm)] p-1 klaud-muted transition-colors hover:bg-[color:var(--surface)] hover:text-red-500 disabled:opacity-50"
+              className="rounded-[var(--rSm)] p-1 tulis-muted transition-colors hover:bg-[color:var(--surface)] hover:text-red-500 disabled:opacity-50"
               aria-label="Delete note"
               title="Delete note"
             >
@@ -288,14 +288,14 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
 
       <aside
         id="notes-drawer"
-        className={`fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] shrink-0 border-r klaud-border bg-[color:var(--surface)] transition-transform duration-200 md:static md:z-auto md:h-full md:max-w-none md:translate-x-0 md:transition-[width] md:duration-200 ${isSidebarOpen ? 'translate-x-0 md:w-[280px]' : '-translate-x-full md:w-0'}`}
+        className={`fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] shrink-0 border-r tulis-border bg-[color:var(--surface)] transition-transform duration-200 md:static md:z-auto md:h-full md:max-w-none md:translate-x-0 md:transition-[width] md:duration-200 ${isSidebarOpen ? 'translate-x-0 md:w-[280px]' : '-translate-x-full md:w-0'}`}
       >
         <div className={`flex h-full min-h-0 flex-col ${isSidebarOpen ? 'opacity-100' : 'md:pointer-events-none md:opacity-0'}`}>
           <div className="shrink-0 px-3 pb-3 pt-3">
             <div className="flex items-center justify-between gap-2">
               <Link href="/notes" onClick={closeOnMobile} className="shrink-0 text-left leading-none">
-                <span className="block text-base font-black tracking-tight lowercase klaud-text">tulis</span>
-                <span className="mt-1 block text-[9px] uppercase tracking-[0.18em] klaud-muted opacity-70" style={{ fontFamily: 'var(--font-geist-mono)' }}>
+                <span className="block text-base font-black tracking-tight lowercase tulis-text">tulis</span>
+                <span className="mt-1 block text-[9px] uppercase tracking-[0.18em] tulis-muted opacity-70" style={{ fontFamily: 'var(--font-geist-mono)' }}>
                   by yun
                 </span>
               </Link>
@@ -320,9 +320,9 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
                   type="button"
                   onClick={onClose}
                   aria-label="Close drawer"
-                  className="group flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border klaud-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--accent)] hover:bg-[color:var(--surface2)] md:hidden"
+                  className="group flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border tulis-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--accent)] hover:bg-[color:var(--surface2)] md:hidden"
                 >
-                  <svg className="h-4 w-4 klaud-muted transition-colors group-hover:text-[color:var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
+                  <svg className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
                     <line x1="6" y1="6" x2="18" y2="18" strokeLinecap="round" />
                     <line x1="18" y1="6" x2="6" y2="18" strokeLinecap="round" />
                   </svg>
@@ -333,7 +333,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
             <div className="mt-3">
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                  <svg className="h-4 w-4 klaud-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 tulis-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.35-4.35" />
                   </svg>
@@ -343,7 +343,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="Search title, content, tags"
-                  className="w-full rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] py-2 pl-10 pr-3 text-sm klaud-text placeholder:text-[color:var(--text3)] focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)]"
+                  className="w-full rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] py-2 pl-10 pr-3 text-sm tulis-text placeholder:text-[color:var(--text3)] focus:border-[color:var(--accent)] focus:outline-none"
                 />
               </div>
             </div>
@@ -355,7 +355,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
                   onClick={() => setActiveView('all')}
                   className={`h-8 flex-1 rounded-[calc(var(--rSm)-2px)] px-2 text-xs font-semibold uppercase tracking-[0.11em] transition-colors ${activeView === 'all'
                     ? 'bg-[color:var(--accent)] text-white'
-                    : 'klaud-muted hover:text-[color:var(--text)]'
+                    : 'tulis-muted hover:text-[color:var(--text)]'
                     }`}
                 >
                   All
@@ -365,7 +365,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
                   onClick={() => setActiveView('pinned')}
                   className={`h-8 flex-1 rounded-[calc(var(--rSm)-2px)] px-2 text-xs font-semibold uppercase tracking-[0.11em] transition-colors ${activeView === 'pinned'
                     ? 'bg-[color:var(--accent)] text-white'
-                    : 'klaud-muted hover:text-[color:var(--text)]'
+                    : 'tulis-muted hover:text-[color:var(--text)]'
                     }`}
                 >
                   Pinned
@@ -379,7 +379,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
               <p className="pl-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--text3)]">Tags</p>
               <div className="mt-1.5 space-y-1.5">
                 {allTags.length === 0 ? (
-                  <p className="pl-4 text-xs klaud-muted">No tags yet</p>
+                  <p className="pl-4 text-xs tulis-muted">No tags yet</p>
                 ) : (
                   allTags.map((tag) => (
                     <button
@@ -390,7 +390,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
                       }}
                       className={`w-full rounded-[var(--rSm)] py-1.5 pl-4 pr-2 text-left text-xs font-medium transition-colors ${activeTag === tag
                         ? 'bg-[color:var(--surface2)] text-[color:var(--text)]'
-                        : 'klaud-muted hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]'
+                        : 'tulis-muted hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]'
                         }`}
                     >
                       #{tag}
@@ -402,7 +402,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
 
             <div className="mt-3 border-t border-[color:var(--border2)] pt-3">
               {visibleNotes.length === 0 ? (
-                <p className="px-1 py-2 text-xs klaud-muted">
+                <p className="px-1 py-2 text-xs tulis-muted">
                   No notes match this view.
                 </p>
               ) : (
@@ -416,8 +416,8 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
           <div className="shrink-0 border-t border-[color:var(--border2)] px-3 py-3">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate text-xs font-semibold klaud-text">{userDisplayName}</p>
-                <p className="truncate text-[10px] klaud-muted">Yun Labs</p>
+                <p className="truncate text-xs font-semibold tulis-text">{userDisplayName}</p>
+                <p className="truncate text-[10px] tulis-muted">Yun Labs</p>
               </div>
 
               <div className="flex items-center gap-1.5">
@@ -425,7 +425,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
                 <button
                   type="button"
                   onClick={() => setConfirmingLogout(true)}
-                  className="flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text2)] transition-colors duration-150 hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focusRing)]"
+                  className="flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text2)] transition-colors duration-150 hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)] focus:outline-none"
                   title="Logout"
                   aria-label="Logout"
                 >
@@ -441,9 +441,9 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
 
       {confirmingLogout && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
-          <div className="klaud-surface w-full max-w-[320px] rounded-[var(--rLg)] border klaud-border p-8">
-            <h2 className="mb-2 text-center text-xl font-bold tracking-tight klaud-text">Log out?</h2>
-            <p className="mb-8 text-center text-sm klaud-muted">You will need to sign in again to access your notes.</p>
+          <div className="tulis-surface w-full max-w-[320px] rounded-[var(--rLg)] border tulis-border p-8">
+            <h2 className="mb-2 text-center text-xl font-bold tracking-tight tulis-text">Log out?</h2>
+            <p className="mb-8 text-center text-sm tulis-muted">You will need to sign in again to access your notes.</p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={async () => {
@@ -456,7 +456,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, onClose }: NotesDraw
               </button>
               <button
                 onClick={() => setConfirmingLogout(false)}
-                className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] py-3 text-sm font-semibold klaud-text transition-colors hover:bg-[color:var(--surface2)]"
+                className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] py-3 text-sm font-semibold tulis-text transition-colors hover:bg-[color:var(--surface2)]"
               >
                 Stay signed in
               </button>

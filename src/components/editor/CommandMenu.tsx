@@ -61,7 +61,7 @@ export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
         }));
 
         return (
-            <div className="klaud-surface border klaud-border rounded-[var(--rMd)] overflow-hidden min-w-[280px] max-h-[400px] overflow-y-auto">
+            <div className="tulis-surface border tulis-border rounded-[var(--rMd)] overflow-hidden min-w-[280px] max-h-[400px] overflow-y-auto">
                 {items.length > 0 ? (
                     <div className="p-1">
                         {items.map((item, index) => {
@@ -71,8 +71,8 @@ export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
                                 key={index}
                                 type="button"
                                 className={`w-full flex items-start gap-3 px-3 py-2 rounded-[var(--rSm)] text-left transition-colors ${index === activeIndex
-                                    ? 'bg-[color:var(--surface2)] klaud-text'
-                                    : 'klaud-text hover:bg-[color:var(--surface2)]'
+                                    ? 'bg-[color:var(--surface2)] tulis-text'
+                                    : 'tulis-text hover:bg-[color:var(--surface2)]'
                                     }`}
                                 onPointerDown={(event) => {
                                     // On touch devices, click can fire after the editor loses selection.
@@ -97,14 +97,14 @@ export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
                                 </span>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-medium text-sm">{item.title}</div>
-                                    <div className="text-xs klaud-muted truncate">{item.description}</div>
+                                    <div className="text-xs tulis-muted truncate">{item.description}</div>
                                 </div>
                             </button>
                             );
                         })}
                     </div>
                 ) : (
-                    <div className="px-3 py-2 text-sm klaud-muted">No results</div>
+                    <div className="px-3 py-2 text-sm tulis-muted">No results</div>
                 )}
             </div>
         );

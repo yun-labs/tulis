@@ -43,8 +43,8 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center klaud-bg">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] klaud-muted">Opening notes...</p>
+    <div className="flex min-h-screen items-center justify-center tulis-bg">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] tulis-muted">Opening notes...</p>
     </div>
   );
 }

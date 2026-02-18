@@ -39,17 +39,17 @@
   --text3: rgba(255, 255, 255, 0.4);
 }
 
-/* Legacy aliases used across existing components */
+/* App semantic aliases used across components */
 :root {
-  --klaud-accent: var(--accent);
-  --klaud-secondary: var(--accent);
-  --klaud-bg: var(--bg);
-  --klaud-surface: var(--surface);
-  --klaud-text: var(--text);
-  --klaud-muted: var(--text2);
-  --klaud-border: var(--border);
-  --klaud-glass: var(--surface);
-  --klaud-shadow: none;
+  --tulis-accent: var(--accent);
+  --tulis-secondary: var(--accent);
+  --tulis-bg: var(--bg);
+  --tulis-surface: var(--surface);
+  --tulis-text: var(--text);
+  --tulis-muted: var(--text2);
+  --tulis-border: var(--border);
+  --tulis-glass: var(--surface);
+  --tulis-shadow: none;
 }
 
 @theme inline {
@@ -88,31 +88,50 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
-.klaud-bg {
+/* Standardize text input focus: thin accent border, no outer glow */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='search'],
+textarea {
+  box-shadow: none;
+}
+
+input[type='text']:focus,
+input[type='email']:focus,
+input[type='password']:focus,
+input[type='search']:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: none !important;
+}
+
+.tulis-bg {
   background-color: var(--bg);
 }
 
-.klaud-surface {
+.tulis-surface {
   background-color: var(--surface);
 }
 
-.klaud-text {
+.tulis-text {
   color: var(--text);
 }
 
-.klaud-muted {
+.tulis-muted {
   color: var(--text2);
 }
 
-.klaud-border {
+.tulis-border {
   border-color: var(--border);
 }
 
-.klaud-border-b {
+.tulis-border-b {
   border-bottom-color: var(--border);
 }
 
-.klaud-border-t {
+.tulis-border-t {
   border-top-color: var(--border);
 }
 
