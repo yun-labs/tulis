@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { IconType } from 'react-icons';
 
@@ -25,6 +25,7 @@ export type CommandMenuRef = {
 
 export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
     ({ items, command }, ref) => {
+        const touchStartRef = useRef<{ x: number; y: number; index: number; moved: boolean } | null>(null);
         const [selectedIndex, setSelectedIndex] = useState(0);
         const activeIndex = items.length === 0 ? -1 : Math.min(selectedIndex, items.length - 1);
 
@@ -74,19 +75,53 @@ export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
                                     ? 'bg-[color:var(--surface2)] tulis-text'
                                     : 'tulis-text hover:bg-[color:var(--surface2)]'
                                     }`}
-                                onPointerDown={(event) => {
-                                    // On touch devices, click can fire after the editor loses selection.
-                                    // Execute on pointer down to preserve the suggestion range.
+                                onMouseDown={(event) => {
+                                    // Desktop: execute on mousedown so editor selection/range is preserved.
                                     event.preventDefault();
                                     event.stopPropagation();
                                     selectItem(index);
                                 }}
+                                onTouchStart={(event) => {
+                                    const touch = event.touches[0];
+                                    if (!touch) return;
+                                    touchStartRef.current = {
+                                        x: touch.clientX,
+                                        y: touch.clientY,
+                                        index,
+                                        moved: false,
+                                    };
+                                }}
+                                onTouchMove={(event) => {
+                                    const touch = event.touches[0];
+                                    const touchStart = touchStartRef.current;
+                                    if (!touch || !touchStart) return;
+
+                                    if (
+                                        Math.abs(touch.clientX - touchStart.x) > 10 ||
+                                        Math.abs(touch.clientY - touchStart.y) > 10
+                                    ) {
+                                        touchStart.moved = true;
+                                    }
+                                }}
+                                onTouchEnd={(event) => {
+                                    const touchStart = touchStartRef.current;
+                                    touchStartRef.current = null;
+                                    if (!touchStart) return;
+                                    if (touchStart.moved || touchStart.index !== index) return;
+
+                                    // Mobile: only treat as select when it's a tap, not a scroll gesture.
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    selectItem(index);
+                                }}
+                                onTouchCancel={() => {
+                                    touchStartRef.current = null;
+                                }}
                                 onClick={(event) => {
-                                    // Keyboard activation fallback (detail === 0) without double-triggering pointer taps.
+                                    // Keyboard activation fallback (detail === 0).
                                     if (event.detail === 0) {
                                         selectItem(index);
                                     }
-                                    event.preventDefault();
                                 }}
                             >
                                 <span className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[8px] border ${index === activeIndex
