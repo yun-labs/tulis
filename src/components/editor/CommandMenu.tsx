@@ -74,7 +74,20 @@ export const CommandMenu = forwardRef<CommandMenuRef, CommandMenuProps>(
                                     ? 'bg-[color:var(--surface2)] klaud-text'
                                     : 'klaud-text hover:bg-[color:var(--surface2)]'
                                     }`}
-                                onClick={() => selectItem(index)}
+                                onPointerDown={(event) => {
+                                    // On touch devices, click can fire after the editor loses selection.
+                                    // Execute on pointer down to preserve the suggestion range.
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    selectItem(index);
+                                }}
+                                onClick={(event) => {
+                                    // Keyboard activation fallback (detail === 0) without double-triggering pointer taps.
+                                    if (event.detail === 0) {
+                                        selectItem(index);
+                                    }
+                                    event.preventDefault();
+                                }}
                             >
                                 <span className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[8px] border ${index === activeIndex
                                     ? 'border-[color:var(--accent)]/40 bg-[color:var(--surface)] text-[color:var(--accent)]'

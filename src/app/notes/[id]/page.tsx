@@ -193,7 +193,8 @@ export default function NotePage() {
       const newContent = data.content_json || { type: 'doc', content: [] };
       const currentContent = editor.getJSON();
       const isInitialHydration = !hasHydratedContentRef.current;
-      const shouldApplyRemoteContent = isInitialHydration || !editor.isFocused;
+      const hasPendingLocalContent = changeVersionRef.current > savedVersionRef.current;
+      const shouldApplyRemoteContent = isInitialHydration || !hasPendingLocalContent;
 
       if (shouldApplyRemoteContent && JSON.stringify(newContent) !== JSON.stringify(currentContent)) {
         editor.commands.setContent(newContent, { emitUpdate: false });
