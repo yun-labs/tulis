@@ -15,6 +15,7 @@ import { AbbrevExpand } from '@/editor/AbbrevExpand';
 import { SlashCommand } from '@/lib/editor/SlashCommand';
 import { TagChip } from '@/editor/TagChip';
 import { DateChip } from '@/editor/DateChip';
+import { CodeBlock } from '@/editor/CodeBlock';
 import { DatePicker } from '@/components/editor/DatePicker';
 import { offOpenDatePicker, onOpenDatePicker } from '@/lib/editor/datePickerEvent';
 import { normalizeTag, normalizeTags } from '@/lib/notes';
@@ -110,7 +111,10 @@ export default function NotePage() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        codeBlock: false,
+      }),
+      CodeBlock,
       TaskList,
       TaskItem.configure({ nested: true }),
       TagChip,
@@ -197,7 +201,17 @@ export default function NotePage() {
       const shouldApplyRemoteContent = isInitialHydration || !hasPendingLocalContent;
 
       if (shouldApplyRemoteContent && JSON.stringify(newContent) !== JSON.stringify(currentContent)) {
+        const selectionBefore = editor.state.selection;
         editor.commands.setContent(newContent, { emitUpdate: false });
+
+        // Keep cursor position stable when syncing in-place to avoid jumping to the end.
+        if (editor.isFocused) {
+          const minPos = 1;
+          const maxPos = editor.state.doc.content.size;
+          const from = Math.max(minPos, Math.min(selectionBefore.from, maxPos));
+          const to = Math.max(minPos, Math.min(selectionBefore.to, maxPos));
+          editor.commands.setTextSelection({ from, to });
+        }
       }
 
       hasHydratedContentRef.current = true;

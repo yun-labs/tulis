@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tiptap/extension-code-block-lowlight": "^3.20.0",
     "@tiptap/extension-task-item": "^3.6.6",
     "@tiptap/extension-task-list": "^3.6.6",
     "@tiptap/react": "^3.6.6",
@@ -16,10 +17,14 @@
     "@tiptap/suggestion": "^3.19.0",
     "firebase": "^12.9.0",
     "lodash.debounce": "^4.0.8",
+    "lowlight": "^3.3.0",
     "next": "^16.1.6",
+    "prettier": "^3.8.1",
+    "prettier-plugin-java": "^2.8.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
+    "sql-formatter": "^15.7.2",
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {

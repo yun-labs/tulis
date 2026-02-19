@@ -25,6 +25,10 @@
   --text: rgba(15, 23, 42, 0.92);
   --text2: rgba(15, 23, 42, 0.62);
   --text3: rgba(15, 23, 42, 0.4);
+  --codeBg: #f3f6fa;
+  --codeGutterBg: #e9eef5;
+  --codeBorder: rgba(15, 23, 42, 0.12);
+  --codeText: rgba(15, 23, 42, 0.9);
 }
 
 :root[data-theme='dark'] {
@@ -37,6 +41,10 @@
   --text: rgba(255, 255, 255, 0.92);
   --text2: rgba(255, 255, 255, 0.62);
   --text3: rgba(255, 255, 255, 0.4);
+  --codeBg: #111722;
+  --codeGutterBg: #0d131d;
+  --codeBorder: rgba(255, 255, 255, 0.08);
+  --codeText: rgba(255, 255, 255, 0.9);
 }
 
 /* App semantic aliases used across components */
@@ -244,26 +252,296 @@ textarea:focus {
   line-height: 1.6;
 }
 
-.ProseMirror pre,
-.prose .ProseMirror pre {
+.ProseMirror .tulis-code-block,
+.prose .ProseMirror .tulis-code-block {
+  --code-language-color: color-mix(in srgb, var(--accent) 72%, var(--text));
   margin: 1rem 0;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.7rem;
-  background: var(--surface2);
-  color: var(--text);
-  overflow-x: auto;
+  border: 1px solid var(--codeBorder);
+  border-radius: 12px;
+  background: var(--codeBg);
+  color: var(--codeText);
+  overflow: hidden;
 }
 
-.ProseMirror pre code,
-.prose .ProseMirror pre code {
-  display: block;
+.ProseMirror .tulis-code-block-toolbar,
+.prose .ProseMirror .tulis-code-block-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--border2);
+  background: color-mix(in srgb, var(--codeBg) 85%, var(--surface));
+}
+
+.ProseMirror .tulis-code-language,
+.prose .ProseMirror .tulis-code-language {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.3rem;
+  border: 1px solid color-mix(in srgb, var(--code-language-color) 22%, var(--border2));
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--code-language-color) 8%, var(--surface));
+  color: var(--code-language-color);
   font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.9rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  padding: 0 0.46rem;
+  text-transform: uppercase;
+}
+
+.ProseMirror .tulis-code-actions,
+.prose .ProseMirror .tulis-code-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ProseMirror .tulis-code-action,
+.prose .ProseMirror .tulis-code-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.45rem;
+  width: 1.45rem;
+  border: none;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--text2);
+  opacity: 0.55;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 160ms ease, background-color 160ms ease, opacity 160ms ease;
+}
+
+.ProseMirror .tulis-code-action:hover:not(:disabled),
+.prose .ProseMirror .tulis-code-action:hover:not(:disabled) {
+  opacity: 1;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
+.ProseMirror .tulis-code-action.is-working,
+.prose .ProseMirror .tulis-code-action.is-working {
+  opacity: 0.8;
+}
+
+.ProseMirror .tulis-code-action:disabled,
+.prose .ProseMirror .tulis-code-action:disabled {
+  opacity: 0.25;
+}
+
+.ProseMirror .tulis-code-action-anchor,
+.prose .ProseMirror .tulis-code-action-anchor {
+  position: relative;
+}
+
+.ProseMirror .tulis-code-tooltip,
+.prose .ProseMirror .tulis-code-tooltip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  white-space: nowrap;
+  border: 1px solid var(--border2);
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--surface) 94%, var(--codeBg));
+  color: var(--text2);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 0.28rem 0.42rem;
+}
+
+.ProseMirror .tulis-code-body,
+.prose .ProseMirror .tulis-code-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: stretch;
+  max-height: min(9rem, 24vh);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ProseMirror .tulis-code-block[data-expanded='true'] .tulis-code-body,
+.prose .ProseMirror .tulis-code-block[data-expanded='true'] .tulis-code-body {
+  max-height: none;
+}
+
+.ProseMirror .tulis-code-block[data-lines='false'] .tulis-code-body,
+.prose .ProseMirror .tulis-code-block[data-lines='false'] .tulis-code-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ProseMirror .tulis-code-gutter,
+.prose .ProseMirror .tulis-code-gutter {
+  width: 2.85rem;
+  border-right: 1px solid var(--border2);
+  background: var(--codeGutterBg);
+  color: var(--text3);
+  user-select: none;
+  pointer-events: none;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ProseMirror .tulis-code-gutter-inner,
+.prose .ProseMirror .tulis-code-gutter-inner {
+  padding: 1rem 0.55rem;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  text-align: right;
+  transition: transform 90ms linear;
+}
+
+.ProseMirror .tulis-code-line-number,
+.prose .ProseMirror .tulis-code-line-number {
+  display: block;
+}
+
+.ProseMirror .tulis-code-block .tulis-code-scroll,
+.prose .ProseMirror .tulis-code-block .tulis-code-scroll {
+  margin: 0;
+  padding: 1rem;
+  background: transparent;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 0;
+}
+
+.ProseMirror .tulis-code-block .tulis-code-content,
+.prose .ProseMirror .tulis-code-block .tulis-code-content {
+  display: block;
+  min-width: max-content;
+  width: max-content;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84rem;
   line-height: 1.6;
   color: inherit;
   background: transparent;
   padding: 0;
+  white-space: pre;
+}
+
+@media (max-width: 640px) {
+  .ProseMirror .tulis-code-block-toolbar,
+  .prose .ProseMirror .tulis-code-block-toolbar {
+    padding: 0.42rem 0.62rem;
+  }
+
+  .ProseMirror .tulis-code-actions,
+  .prose .ProseMirror .tulis-code-actions {
+    gap: 0.22rem;
+  }
+
+  .ProseMirror .tulis-code-action,
+  .prose .ProseMirror .tulis-code-action {
+    height: 1.72rem;
+    width: 1.72rem;
+    border-radius: 0.42rem;
+  }
+
+  .ProseMirror .tulis-code-block .tulis-code-scroll,
+  .prose .ProseMirror .tulis-code-block .tulis-code-scroll {
+    padding: 0.85rem;
+  }
+
+  .ProseMirror .tulis-code-gutter-inner,
+  .prose .ProseMirror .tulis-code-gutter-inner {
+    font-size: 0.75rem;
+  }
+
+  .ProseMirror .tulis-code-block .tulis-code-content,
+  .prose .ProseMirror .tulis-code-block .tulis-code-content {
+    font-size: 0.8rem;
+  }
+}
+
+.ProseMirror .tulis-code-block[data-language='javascript'],
+.prose .ProseMirror .tulis-code-block[data-language='javascript'] {
+  --code-language-color: #9a6b29;
+}
+
+.ProseMirror .tulis-code-block[data-language='typescript'],
+.prose .ProseMirror .tulis-code-block[data-language='typescript'] {
+  --code-language-color: #2f69b3;
+}
+
+.ProseMirror .tulis-code-block[data-language='json'],
+.prose .ProseMirror .tulis-code-block[data-language='json'] {
+  --code-language-color: #2f7a73;
+}
+
+.ProseMirror .tulis-code-block[data-language='python'],
+.prose .ProseMirror .tulis-code-block[data-language='python'] {
+  --code-language-color: #2e7288;
+}
+
+.ProseMirror .tulis-code-block[data-language='html'],
+.prose .ProseMirror .tulis-code-block[data-language='html'] {
+  --code-language-color: #9f5d30;
+}
+
+.ProseMirror .tulis-code-block[data-language='css'],
+.prose .ProseMirror .tulis-code-block[data-language='css'] {
+  --code-language-color: #2f6d90;
+}
+
+.ProseMirror .tulis-code-block .hljs-comment,
+.ProseMirror .tulis-code-block .hljs-quote,
+.prose .ProseMirror .tulis-code-block .hljs-comment,
+.prose .ProseMirror .tulis-code-block .hljs-quote {
+  color: var(--text3);
+}
+
+.ProseMirror .tulis-code-block .hljs-keyword,
+.ProseMirror .tulis-code-block .hljs-selector-tag,
+.ProseMirror .tulis-code-block .hljs-literal,
+.prose .ProseMirror .tulis-code-block .hljs-keyword,
+.prose .ProseMirror .tulis-code-block .hljs-selector-tag,
+.prose .ProseMirror .tulis-code-block .hljs-literal {
+  color: color-mix(in srgb, var(--code-language-color) 58%, var(--text));
+}
+
+.ProseMirror .tulis-code-block .hljs-string,
+.ProseMirror .tulis-code-block .hljs-attr,
+.ProseMirror .tulis-code-block .hljs-template-tag,
+.prose .ProseMirror .tulis-code-block .hljs-string,
+.prose .ProseMirror .tulis-code-block .hljs-attr,
+.prose .ProseMirror .tulis-code-block .hljs-template-tag {
+  color: color-mix(in srgb, #4a7c59 70%, var(--text));
+}
+
+.ProseMirror .tulis-code-block .hljs-number,
+.ProseMirror .tulis-code-block .hljs-symbol,
+.ProseMirror .tulis-code-block .hljs-bullet,
+.prose .ProseMirror .tulis-code-block .hljs-number,
+.prose .ProseMirror .tulis-code-block .hljs-symbol,
+.prose .ProseMirror .tulis-code-block .hljs-bullet {
+  color: color-mix(in srgb, #8b5d34 74%, var(--text));
+}
+
+.ProseMirror .tulis-code-block .hljs-title,
+.ProseMirror .tulis-code-block .hljs-section,
+.ProseMirror .tulis-code-block .hljs-function,
+.prose .ProseMirror .tulis-code-block .hljs-title,
+.prose .ProseMirror .tulis-code-block .hljs-section,
+.prose .ProseMirror .tulis-code-block .hljs-function {
+  color: color-mix(in srgb, #3d6e97 76%, var(--text));
+}
+
+.ProseMirror .tulis-code-block .hljs-meta,
+.ProseMirror .tulis-code-block .hljs-params,
+.prose .ProseMirror .tulis-code-block .hljs-meta,
+.prose .ProseMirror .tulis-code-block .hljs-params {
+  color: var(--text2);
 }
 
 .ProseMirror code,
