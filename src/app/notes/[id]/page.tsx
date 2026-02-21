@@ -597,12 +597,22 @@ export default function NotePage() {
     window.requestAnimationFrame(() => updateSelectionToolbar(editor));
   }, [editor, isReadOnly, updateSelectionToolbar]);
 
+  const getSelectionAnchor = useCallback(() => {
+    if (!editor) return null;
+    if (!editor.state.selection.empty) {
+      return { from: editor.state.selection.from, to: editor.state.selection.to };
+    }
+    return lastSelectionRangeRef.current;
+  }, [editor]);
+
   const canShiftListItem = useCallback((direction: 'left' | 'right', itemType: 'taskItem' | 'listItem') => {
     if (!editor || isReadOnly) return false;
 
-    const selectionStart = lastSelectionRangeRef.current?.from ?? editor.state.selection.from;
-    const canChain = editor.can().chain().focus();
-    canChain.setTextSelection({ from: selectionStart, to: selectionStart });
+    const selection = getSelectionAnchor();
+    if (!selection) return false;
+
+    const canChain = editor.can().chain();
+    canChain.setTextSelection({ from: selection.from, to: selection.from });
 
     if (direction === 'right') {
       canChain.sinkListItem(itemType);
@@ -611,15 +621,17 @@ export default function NotePage() {
     }
 
     return canChain.run();
-  }, [editor, isReadOnly]);
+  }, [editor, getSelectionAnchor, isReadOnly]);
 
   const runSelectionListShift = useCallback((direction: 'left' | 'right') => {
     if (!editor || isReadOnly) return;
 
-    const selectionStart = lastSelectionRangeRef.current?.from ?? editor.state.selection.from;
+    const selection = getSelectionAnchor();
+    if (!selection) return;
+
     const apply = (itemType: 'taskItem' | 'listItem') => {
       const chain = editor.chain().focus();
-      chain.setTextSelection({ from: selectionStart, to: selectionStart });
+      chain.setTextSelection({ from: selection.from, to: selection.from });
 
       if (direction === 'right') {
         chain.sinkListItem(itemType);
@@ -638,7 +650,7 @@ export default function NotePage() {
 
     if (!didRun) return;
     window.requestAnimationFrame(() => updateSelectionToolbar(editor));
-  }, [canShiftListItem, editor, isReadOnly, updateSelectionToolbar]);
+  }, [canShiftListItem, editor, getSelectionAnchor, isReadOnly, updateSelectionToolbar]);
 
   useEffect(() => {
     if (!editor) return;
@@ -913,67 +925,64 @@ export default function NotePage() {
     const ms = deletedAt.toDate().getTime() + (30 * 24 * 60 * 60 * 1000);
     return new Date(ms);
   }, [deletedAt]);
-  const selectionToolbarButtons = useMemo(() => {
-    const canTabLeft = canShiftListItem('left', 'taskItem') || canShiftListItem('left', 'listItem');
-    const canTabRight = canShiftListItem('right', 'taskItem') || canShiftListItem('right', 'listItem');
-
-    return [
-      {
-        id: 'tab-left',
-        label: '<',
-        ariaLabel: 'Tab left',
-        active: false,
-        disabled: !canTabLeft,
-        onPress: () => runSelectionListShift('left'),
-        className: 'font-semibold',
-      },
-      {
-        id: 'tab-right',
-        label: '>',
-        ariaLabel: 'Tab right',
-        active: false,
-        disabled: !canTabRight,
-        onPress: () => runSelectionListShift('right'),
-        className: 'font-semibold',
-      },
-      {
-        id: 'bold',
-        label: 'B',
-        ariaLabel: 'Toggle bold',
-        active: editor?.isActive('bold') ?? false,
-        disabled: false,
-        onPress: () => runSelectionMarkToggle('bold'),
-        className: 'font-bold',
-      },
-      {
-        id: 'italic',
-        label: 'I',
-        ariaLabel: 'Toggle italic',
-        active: editor?.isActive('italic') ?? false,
-        disabled: false,
-        onPress: () => runSelectionMarkToggle('italic'),
-        className: 'italic',
-      },
-      {
-        id: 'underline',
-        label: 'U',
-        ariaLabel: 'Toggle underline',
-        active: editor?.isActive('underline') ?? false,
-        disabled: false,
-        onPress: () => runSelectionMarkToggle('underline'),
-        className: 'underline decoration-2',
-      },
-      {
-        id: 'strike',
-        label: 'S',
-        ariaLabel: 'Toggle strikethrough',
-        active: editor?.isActive('strike') ?? false,
-        disabled: false,
-        onPress: () => runSelectionMarkToggle('strike'),
-        className: 'line-through decoration-2',
-      },
-    ];
-  }, [canShiftListItem, editor, runSelectionListShift, runSelectionMarkToggle]);
+  const canTabLeft = canShiftListItem('left', 'taskItem') || canShiftListItem('left', 'listItem');
+  const canTabRight = canShiftListItem('right', 'taskItem') || canShiftListItem('right', 'listItem');
+  const selectionToolbarButtons = [
+    {
+      id: 'tab-left',
+      label: '<',
+      ariaLabel: 'Tab left',
+      active: false,
+      disabled: !canTabLeft,
+      onPress: () => runSelectionListShift('left'),
+      className: 'font-semibold',
+    },
+    {
+      id: 'tab-right',
+      label: '>',
+      ariaLabel: 'Tab right',
+      active: false,
+      disabled: !canTabRight,
+      onPress: () => runSelectionListShift('right'),
+      className: 'font-semibold',
+    },
+    {
+      id: 'bold',
+      label: 'B',
+      ariaLabel: 'Toggle bold',
+      active: editor?.isActive('bold') ?? false,
+      disabled: false,
+      onPress: () => runSelectionMarkToggle('bold'),
+      className: 'font-bold',
+    },
+    {
+      id: 'italic',
+      label: 'I',
+      ariaLabel: 'Toggle italic',
+      active: editor?.isActive('italic') ?? false,
+      disabled: false,
+      onPress: () => runSelectionMarkToggle('italic'),
+      className: 'italic',
+    },
+    {
+      id: 'underline',
+      label: 'U',
+      ariaLabel: 'Toggle underline',
+      active: editor?.isActive('underline') ?? false,
+      disabled: false,
+      onPress: () => runSelectionMarkToggle('underline'),
+      className: 'underline decoration-2',
+    },
+    {
+      id: 'strike',
+      label: 'S',
+      ariaLabel: 'Toggle strikethrough',
+      active: editor?.isActive('strike') ?? false,
+      disabled: false,
+      onPress: () => runSelectionMarkToggle('strike'),
+      className: 'line-through decoration-2',
+    },
+  ];
 
   if (!noteId || (authLoading && !user)) {
     return <div className="tulis-bg min-h-screen" />;
@@ -1281,14 +1290,6 @@ export default function NotePage() {
               <EditorContent
                 editor={editor}
                 className="prose prose-lg dark:prose-invert max-w-none focus:outline-none tulis-text"
-                onContextMenu={(event) => {
-                  if (isReadOnly) return;
-                  if (!isMobileSelectionViewport()) return;
-                  event.preventDefault();
-                  window.requestAnimationFrame(() => {
-                    updateSelectionToolbar(editor, { force: true });
-                  });
-                }}
               />
             </div>
           )}

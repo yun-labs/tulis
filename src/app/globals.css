@@ -170,12 +170,6 @@ textarea:focus {
   box-shadow: none;
 }
 
-@media (pointer: coarse) {
-  .ProseMirror {
-    -webkit-touch-callout: none;
-  }
-}
-
 .ProseMirror a,
 .prose .ProseMirror a {
   color: var(--accent);
