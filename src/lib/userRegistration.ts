@@ -9,11 +9,11 @@ export async function ensureUserAppRegistration(user: User) {
     {
       uid: user.uid,
       email: user.email ?? null,
-      display_name: user.displayName ?? null,
+      displayName: user.displayName ?? null,
       apps: {
         [APP_ID]: true,
       },
-      updated_at: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     },
     { merge: true }
   );

@@ -27,8 +27,7 @@ service cloud.firestore {
     match /tulis/data/notes/{noteId} {
       allow create: if isRegisteredForTulis()
         && ('ownerUid' in request.resource.data)
-        && isOwner(request.resource.data.ownerUid)
-        && (!('owner' in request.resource.data) || isOwner(request.resource.data.owner));
+        && isOwner(request.resource.data.ownerUid);
       allow read, delete: if isRegisteredForTulis() && noteBelongsToUser(resource.data);
       allow update: if isRegisteredForTulis()
         && noteBelongsToUser(resource.data)

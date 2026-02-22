@@ -102,7 +102,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
     const notesQuery = query(
       appNotesCollection(db),
       where('ownerUid', '==', uid),
-      orderBy('updated_at', 'desc')
+      orderBy('updatedAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(notesQuery, (snapshot) => {
@@ -112,11 +112,11 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
           id: snapshotDoc.id,
           title: typeof data.title === 'string' && data.title.trim() ? data.title : 'Untitled',
           content: typeof data.content === 'string' ? data.content : '',
-          updatedAt: (data.updatedAt as Timestamp | null) || (data.updated_at as Timestamp | null) || null,
-          deletedAt: (data.deleted_at as Timestamp | null) || null,
+          updatedAt: (data.updatedAt as Timestamp | null) || null,
+          deletedAt: (data.deletedAt as Timestamp | null) || null,
           tags: normalizeTagArray(data.tags),
           pinned: Boolean(data.pinned),
-          isDeleted: data.is_deleted === true,
+          isDeleted: data.isDeleted === true,
         };
       });
 
@@ -277,7 +277,6 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
     await updateDoc(appNoteDoc(db, noteId), {
       pinned: nextPinned,
       updatedAt: serverTimestamp(),
-      updated_at: serverTimestamp(),
     });
   }, []);
 
@@ -327,10 +326,9 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
       }
 
       await updateDoc(appNoteDoc(db, noteId), {
-        is_deleted: true,
-        deleted_at: serverTimestamp(),
+        isDeleted: true,
+        deletedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
     } catch (error) {
       console.error('Failed to move note to trash:', error);
@@ -340,10 +338,9 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
   const restoreNote = useCallback(async (noteId: string) => {
     try {
       await updateDoc(appNoteDoc(db, noteId), {
-        is_deleted: false,
-        deleted_at: deleteField(),
+        isDeleted: false,
+        deletedAt: deleteField(),
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
       onSidebarModeChange('notes');
       setOpenRowMenuId(null);
@@ -396,7 +393,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
     return (
       <li key={note.id}>
         <div className={`group relative min-h-[56px] rounded-[var(--rSm)] border px-2 py-1.5 transition-colors ${isActive
-          ? 'border-[color:var(--border2)] bg-[color:var(--surface2)]'
+          ? 'border-transparent bg-transparent hover:border-[color:var(--border2)] hover:bg-[color:var(--surface2)]/70'
           : 'border-transparent hover:border-[color:var(--border2)] hover:bg-[color:var(--surface2)]/70'
           }`}>
           {isActive && <div className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-full bg-[color:var(--accent)]" />}
@@ -416,7 +413,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
                 <p className="min-w-0 flex-1 truncate text-sm font-semibold tulis-text">{note.title}</p>
                 {note.pinned && (
                   <svg
-                    className="h-3.5 w-3.5 shrink-0 text-[color:var(--accent)]"
+                    className="h-3.5 w-3.5 shrink-0 text-[color:var(--text2)]"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -552,7 +549,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
 
       <aside
         id="notes-drawer"
-        className={`fixed inset-y-0 left-0 z-[150] w-[312px] max-w-[calc(100vw-2.5rem)] shrink-0 border-r tulis-border bg-[color:var(--surface)] transition-transform duration-200 md:static md:z-auto md:h-full md:max-w-none md:translate-x-0 md:transition-[width] md:duration-200 ${isSidebarOpen ? 'translate-x-0 md:w-[312px]' : '-translate-x-full md:w-0'}`}
+        className={`fixed inset-y-0 left-0 z-[150] w-[312px] max-w-[calc(100vw-2.5rem)] shrink-0 border-r tulis-border bg-[color:var(--sidebar)] transition-transform duration-200 md:static md:z-auto md:h-full md:max-w-none md:translate-x-0 md:transition-[width] md:duration-200 ${isSidebarOpen ? 'translate-x-0 md:w-[312px]' : '-translate-x-full md:w-0'}`}
       >
         <div className={`flex h-full min-h-0 flex-col ${isSidebarOpen ? 'opacity-100' : 'md:pointer-events-none md:opacity-0'}`}>
           <div className="shrink-0 px-3 pb-3 pt-3">
@@ -568,9 +565,9 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
                 type="button"
                 onClick={onClose}
                 aria-label="Close drawer"
-                className="group flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border tulis-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--accent)] hover:bg-[color:var(--surface2)] md:hidden"
+                className="group flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border tulis-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--border)] hover:bg-[color:var(--surface2)] md:hidden"
               >
-                <svg className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
+                <svg className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--text)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
                   <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
@@ -588,8 +585,8 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
               aria-label={sidebarMode === 'trash' ? 'Return to notes' : 'Create new note'}
               title={sidebarMode === 'trash' ? 'Return to notes' : 'Create new note'}
               className={`mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[var(--rSm)] px-3 text-sm font-medium transition-colors ${sidebarMode === 'trash'
-                ? 'tulis-return-notes-btn border border-[color:var(--border2)] text-[color:var(--accent)]'
-                : 'bg-[color:var(--accent)] text-white transition-[filter] duration-150 hover:brightness-[0.96] active:brightness-[0.94]'
+                ? 'tulis-return-notes-btn border border-[color:var(--border2)] text-[color:var(--text2)] hover:bg-[color:var(--surface)] hover:text-[color:var(--text)]'
+                : 'bg-[color:var(--accent)] text-white transition-colors duration-150 hover:bg-[color:var(--accentHover)] active:bg-[color:var(--accentActive)]'
                 }`}
             >
               {sidebarMode === 'trash' ? (

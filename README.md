@@ -30,6 +30,10 @@ tulis is a Firebase-backed note-taking app with real-time sync, tags, slash comm
 - Firebase Auth + Cloud Firestore
 - TipTap editor (`@tiptap/react`, StarterKit, suggestion plugins)
 
+## Design Docs
+
+- `docs/color-theming.md` - color tokens, layer mappings, and accent usage rules
+
 ## Project Structure
 
 ```text
@@ -87,11 +91,12 @@ Core fields used by the app:
 - `ownerUid: string`
 - `title: string`
 - `content: string` (plain text for search preview)
-- `content_json: JSON` (TipTap document)
+- `contentJson: JSON` (TipTap document)
 - `tags: string[]` (normalized, lowercase, max 10)
 - `pinned: boolean`
+- `isDeleted: boolean`
+- `deletedAt: timestamp | null`
 - `createdAt`, `updatedAt` (timestamps)
-- Compatibility fields still present: `created_at`, `updated_at`
 
 ## Sync Model
 

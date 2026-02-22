@@ -4,11 +4,9 @@ import { db } from '@/lib/firebase';
 
 async function findLatestByOrder({
   ownerUid,
-  orderField,
   excludeNoteId,
 }: {
   ownerUid: string;
-  orderField: 'updatedAt' | 'updated_at';
   excludeNoteId?: string;
 }): Promise<string | null> {
   try {
@@ -16,7 +14,7 @@ async function findLatestByOrder({
     const q = query(
       appNotesCollection(db),
       where('ownerUid', '==', ownerUid),
-      orderBy(orderField, 'desc'),
+      orderBy('updatedAt', 'desc'),
       limit(queryLimit)
     );
 
@@ -26,7 +24,7 @@ async function findLatestByOrder({
     const candidate = snapshot.docs.find((doc) => {
       if (doc.id === excludeNoteId) return false;
       const data = doc.data();
-      return data.is_deleted !== true;
+      return data.isDeleted !== true;
     });
     return candidate ? candidate.id : null;
   } catch {
@@ -39,17 +37,8 @@ export async function getLatestUserNoteId(
   options: { excludeNoteId?: string } = {}
 ): Promise<string | null> {
   const { excludeNoteId } = options;
-
-  const ownerUidByUpdatedAt = await findLatestByOrder({
-    ownerUid: userId,
-    orderField: 'updatedAt',
-    excludeNoteId,
-  });
-  if (ownerUidByUpdatedAt) return ownerUidByUpdatedAt;
-
   return findLatestByOrder({
     ownerUid: userId,
-    orderField: 'updated_at',
     excludeNoteId,
   });
 }

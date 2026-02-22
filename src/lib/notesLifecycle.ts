@@ -15,7 +15,7 @@ async function isUserAccessibleNoteId(userId: string, noteId: string): Promise<b
     const snapshot = await getDoc(appNoteDoc(db, noteId));
     if (!snapshot.exists()) return false;
     const data = snapshot.data();
-    return data.ownerUid === userId && data.is_deleted !== true;
+    return data.ownerUid === userId && data.isDeleted !== true;
   } catch {
     return false;
   }
@@ -25,18 +25,15 @@ export async function createEmptyNoteForUser(userId: string): Promise<string> {
   const timestamp = serverTimestamp();
   const created = await addDoc(appNotesCollection(db), {
     ownerUid: userId,
-    owner: userId,
     title: 'Untitled',
     content: '',
-    content_json: { type: 'doc', content: [] },
+    contentJson: { type: 'doc', content: [] },
     tags: [],
     pinned: false,
-    is_deleted: false,
-    deleted_at: null,
+    isDeleted: false,
+    deletedAt: null,
     createdAt: timestamp,
     updatedAt: timestamp,
-    created_at: timestamp,
-    updated_at: timestamp,
   });
 
   return created.id;

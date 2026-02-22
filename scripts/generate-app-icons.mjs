@@ -1,6 +1,8 @@
 import { writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 
+const ACCENT = '#5C6AC4';
+
 const OUTPUTS = [
   { size: 512, path: 'public/icons/icon-512.png', type: 'any' },
   { size: 192, path: 'public/icons/icon-192.png', type: 'any' },
@@ -9,22 +11,38 @@ const OUTPUTS = [
   { size: 192, path: 'public/icons/icon-192-maskable.png', type: 'maskable' },
 ];
 
+function createIco(pngEntries) {
+  const count = pngEntries.length;
+  const header = Buffer.alloc(6 + count * 16);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // icon type
+  header.writeUInt16LE(count, 4); // number of images
+
+  let offset = header.length;
+
+  pngEntries.forEach((entry, index) => {
+    const pos = 6 + index * 16;
+    header.writeUInt8(entry.size >= 256 ? 0 : entry.size, pos);
+    header.writeUInt8(entry.size >= 256 ? 0 : entry.size, pos + 1);
+    header.writeUInt8(0, pos + 2); // palette colors
+    header.writeUInt8(0, pos + 3); // reserved
+    header.writeUInt16LE(1, pos + 4); // color planes
+    header.writeUInt16LE(32, pos + 6); // bits per pixel
+    header.writeUInt32LE(entry.buffer.length, pos + 8);
+    header.writeUInt32LE(offset, pos + 12);
+    offset += entry.buffer.length;
+  });
+
+  return Buffer.concat([header, ...pngEntries.map((entry) => entry.buffer)]);
+}
+
 function iconSvg(size, type) {
   const isMaskable = type === 'maskable';
   const monogramSize = Math.round(size * (isMaskable ? 0.565 : 0.535));
 
   return `
 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="tulis icon">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#5B57ED" />
-      <stop offset="100%" stop-color="#4F46E5" />
-    </linearGradient>
-    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="${Math.max(1, Math.round(size * 0.007))}" stdDeviation="${Math.max(0.5, size * 0.004)}" flood-color="rgba(0,0,0,0.16)"/>
-    </filter>
-  </defs>
-  <rect x="0" y="0" width="${size}" height="${size}" fill="url(#bg)"/>
+  <rect x="0" y="0" width="${size}" height="${size}" fill="${ACCENT}"/>
   <text
     x="50%"
     y="51%"
@@ -34,7 +52,6 @@ function iconSvg(size, type) {
     font-size="${monogramSize}"
     font-weight="600"
     fill="#FFFFFF"
-    style="filter:url(#soft-shadow)"
   >t</text>
 </svg>`;
 }
@@ -48,4 +65,15 @@ for (const output of OUTPUTS) {
   await writeFile(output.path, png);
 }
 
-console.log('Generated icons:', OUTPUTS.map((output) => output.path).join(', '));
+const faviconSizes = [16, 32, 48];
+const faviconPngs = [];
+for (const size of faviconSizes) {
+  const png = await sharp(Buffer.from(iconSvg(size, 'any')), { density: 384 })
+    .resize(size, size)
+    .png()
+    .toBuffer();
+  faviconPngs.push({ size, buffer: png });
+}
+await writeFile('src/app/favicon.ico', createIco(faviconPngs));
+
+console.log('Generated icons:', [...OUTPUTS.map((output) => output.path), 'src/app/favicon.ico'].join(', '));

@@ -237,7 +237,7 @@ export default function NotePage() {
 
       docs.forEach((snapshotDoc) => {
         const data = snapshotDoc.data();
-        if (data.is_deleted === true) return;
+        if (data.isDeleted === true) return;
         if (!Array.isArray(data.tags)) return;
         data.tags.forEach((tag) => {
           if (typeof tag !== 'string') return;
@@ -253,7 +253,7 @@ export default function NotePage() {
 
     const sync = () => {
       setAllUserTags(collectTags(ownerUidDocs));
-      setHasTrashNotes(ownerUidDocs.some((snapshotDoc) => snapshotDoc.data().is_deleted === true));
+      setHasTrashNotes(ownerUidDocs.some((snapshotDoc) => snapshotDoc.data().isDeleted === true));
       setHasLoadedUserNotes(true);
     };
 
@@ -287,9 +287,9 @@ export default function NotePage() {
       const data = snapshot.data();
       setTitle(typeof data.title === 'string' ? data.title : '');
       setPinned(Boolean(data.pinned));
-      const deleted = data.is_deleted === true;
+      const deleted = data.isDeleted === true;
       setIsDeleted(deleted);
-      setDeletedAt((data.deleted_at as Timestamp | null) || null);
+      setDeletedAt((data.deletedAt as Timestamp | null) || null);
       if (deleted) {
         setSidebarMode('trash');
         setIsHeaderActionsMenuOpen(false);
@@ -306,7 +306,7 @@ export default function NotePage() {
         : [];
       setTags(incomingTags);
 
-      const newContent = data.content_json || { type: 'doc', content: [] };
+      const newContent = data.contentJson || { type: 'doc', content: [] };
       const currentContent = editor.getJSON();
       const isInitialHydration = !hasHydratedContentRef.current;
       const hasPendingLocalContent = changeVersionRef.current > savedVersionRef.current;
@@ -367,10 +367,9 @@ export default function NotePage() {
     try {
       const noteRef = appNoteDoc(db, noteId);
       await updateDoc(noteRef, {
-        content_json: content,
+        contentJson: content,
         content: plainText,
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
       markSaved(version);
     } catch (error) {
@@ -387,7 +386,6 @@ export default function NotePage() {
       await updateDoc(noteRef, {
         title: newTitle,
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
       markSaved(version);
     } catch (error) {
@@ -406,7 +404,6 @@ export default function NotePage() {
       await updateDoc(appNoteDoc(db, noteId), {
         tags: normalized,
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
     } catch (error) {
       console.error('Failed to save tags:', error);
@@ -424,7 +421,6 @@ export default function NotePage() {
       await updateDoc(appNoteDoc(db, noteId), {
         pinned: nextPinned,
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
     } catch (error) {
       console.error('Failed to toggle pin:', error);
@@ -441,10 +437,9 @@ export default function NotePage() {
 
     try {
       await updateDoc(appNoteDoc(db, noteId), {
-        is_deleted: true,
-        deleted_at: serverTimestamp(),
+        isDeleted: true,
+        deletedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
     } catch (error) {
       console.error('Failed to move note to trash:', error);
@@ -473,10 +468,9 @@ export default function NotePage() {
 
     try {
       await updateDoc(appNoteDoc(db, noteId), {
-        is_deleted: false,
-        deleted_at: deleteField(),
+        isDeleted: false,
+        deletedAt: deleteField(),
         updatedAt: serverTimestamp(),
-        updated_at: serverTimestamp(),
       });
       setSidebarMode('notes');
       setConfirmPermanentDeleteOpen(false);
@@ -497,8 +491,8 @@ export default function NotePage() {
 
       const expiredDocs = snapshot.docs.filter((docSnapshot) => {
         const data = docSnapshot.data();
-        if (data.is_deleted !== true) return false;
-        const deletedAt = (data.deleted_at as Timestamp | null) || null;
+        if (data.isDeleted !== true) return false;
+        const deletedAt = (data.deletedAt as Timestamp | null) || null;
         if (!deletedAt?.toMillis) return false;
         return deletedAt.toMillis() <= cutoffMs;
       });
@@ -533,8 +527,8 @@ export default function NotePage() {
             const data = docSnapshot.data();
             return {
               id: docSnapshot.id,
-              isDeleted: data.is_deleted === true,
-              deletedAt: (data.deleted_at as Timestamp | null) || null,
+              isDeleted: data.isDeleted === true,
+              deletedAt: (data.deletedAt as Timestamp | null) || null,
             };
           })
           .filter((item) => item.id !== noteId && item.isDeleted)
@@ -1174,19 +1168,19 @@ export default function NotePage() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="shrink-0 border-b tulis-border bg-[color:var(--surface)] px-3 py-2.5 sm:px-4">
-          <div className="mx-auto flex min-w-0 max-w-[840px] items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[color:var(--canvas)]">
+        <header className="shrink-0 border-b border-[color:var(--divider)] bg-[color:var(--header)] px-3 py-2.5 sm:px-4">
+          <div className="mx-auto grid min-w-0 max-w-[840px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[auto_minmax(0,1fr)_13.75rem] sm:gap-3">
+            <div className="flex min-w-0 items-center justify-start">
               <button
                 type="button"
-                className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--rSm)] border tulis-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--accent)] hover:bg-[color:var(--surface2)]"
+                className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--rSm)] border tulis-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--border)] hover:bg-[color:var(--surface2)]"
                 onClick={() => setIsSidebarOpen((open) => !open)}
                 aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               >
                 {isSidebarOpen ? (
                   <svg
-                    className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--accent)]"
+                    className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--text)]"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1196,7 +1190,7 @@ export default function NotePage() {
                   </svg>
                 ) : (
                   <svg
-                    className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--accent)]"
+                    className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--text)]"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1208,10 +1202,12 @@ export default function NotePage() {
                   </svg>
                 )}
               </button>
+            </div>
 
+            <div className="min-w-0">
               <input
                 ref={titleInputRef}
-                className={`min-w-0 flex-1 truncate rounded-[var(--rSm)] border px-2 py-1.5 text-[1.18rem] font-semibold tracking-tight placeholder:opacity-35 transition-colors focus:outline-none ${isTitleFocused
+                className={`min-w-0 w-full truncate rounded-[var(--rSm)] border px-2 py-1.5 text-[1.18rem] font-semibold tracking-tight placeholder:opacity-35 transition-colors focus:outline-none ${isTitleFocused
                   ? 'border-[color:var(--accent)] bg-[color:var(--surface2)]'
                   : 'border-transparent bg-transparent'
                   }`}
@@ -1230,7 +1226,7 @@ export default function NotePage() {
               />
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center justify-end gap-2">
               {!isReadOnly && ready && (
                 <span className={`inline-flex w-[6.25rem] shrink-0 items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${syncStatus === 'error' ? 'text-red-500' : 'tulis-muted'}`}>
                   {syncStatus === 'loading'
@@ -1242,7 +1238,7 @@ export default function NotePage() {
                         : 'Synced'}
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${syncStatus === 'syncing'
-                      ? 'bg-[color:var(--accent)]'
+                      ? 'bg-[color:var(--text2)]'
                       : syncStatus === 'loading'
                         ? 'bg-[color:var(--text3)]'
                       : syncStatus === 'error'
@@ -1320,7 +1316,7 @@ export default function NotePage() {
                         setIsHeaderActionsMenuOpen(true);
                       }}
                       className={`inline-flex h-8 w-8 items-center justify-center rounded-[var(--rSm)] border transition-colors ${isHeaderActionsMenuOpen || isTagPopoverOpen
-                        ? 'border-[color:var(--accent)] text-[color:var(--accent)] bg-[color:var(--surface2)]'
+                        ? 'border-[color:var(--border)] text-[color:var(--text)] bg-[color:var(--surface2)]'
                         : 'border-[color:var(--border)] tulis-muted hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]'
                         }`}
                       aria-haspopup="menu"

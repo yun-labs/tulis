@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --accent: #4f46e5;
-  --accentHover: #4338ca;
-  --focusRing: rgba(79, 70, 229, 0.45);
+  --accent: #5c6ac4;
+  --accentHover: #505bb5;
+  --accentActive: #464fa1;
+  --accentTintLight: rgba(92, 106, 196, 0.14);
+  --accentTintDark: rgba(92, 106, 196, 0.14);
+  --focusRing: rgba(92, 106, 196, 0.35);
 
   --rSm: 10px;
   --rMd: 14px;
@@ -17,40 +20,66 @@
 :root,
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f8fafc;
+  --bg: #f5f7fb;
+  --sidebar: #ffffff;
+  --header: #ffffff;
+  --canvas: #f5f7fb;
   --surface: #ffffff;
-  --surface2: #f1f5f9;
-  --border: rgba(15, 23, 42, 0.12);
-  --border2: rgba(15, 23, 42, 0.08);
-  --text: rgba(15, 23, 42, 0.92);
-  --text2: rgba(15, 23, 42, 0.62);
-  --text3: rgba(15, 23, 42, 0.4);
-  --codeBg: #f3f6fa;
-  --codeGutterBg: #e9eef5;
-  --codeBorder: rgba(15, 23, 42, 0.12);
-  --codeText: rgba(15, 23, 42, 0.9);
-  --inlineCodeBg: #e9f0ff;
-  --inlineCodeBorder: rgba(79, 70, 229, 0.18);
-  --inlineCodeText: rgba(15, 23, 42, 0.96);
+  --surface2: #eef2fa;
+  --surface3: #ffffff;
+  --border: #e5e8f3;
+  --border2: #edf0f7;
+  --divider: #e5e8f3;
+  --text: #1f2435;
+  --text2: #5e667f;
+  --text3: #8891a9;
+  --textDisabled: rgba(31, 36, 53, 0.35);
+  --iconPrimary: rgba(31, 36, 53, 0.8);
+  --iconMuted: rgba(31, 36, 53, 0.55);
+  --inputBg: #ffffff;
+  --inputBorder: #e5e8f3;
+  --placeholder: rgba(31, 36, 53, 0.38);
+  --shadow1: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow2: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --codeBg: #f0f3fb;
+  --codeGutterBg: #e8edf8;
+  --codeBorder: #e5e8f3;
+  --codeText: #1f2435;
+  --inlineCodeBg: #eef1ff;
+  --inlineCodeBorder: color-mix(in srgb, var(--accent) 22%, var(--border));
+  --inlineCodeText: #1f2435;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0b0f14;
-  --surface: #0f172a;
-  --surface2: #111827;
-  --border: rgba(255, 255, 255, 0.1);
-  --border2: rgba(255, 255, 255, 0.07);
-  --text: rgba(255, 255, 255, 0.92);
-  --text2: rgba(255, 255, 255, 0.62);
-  --text3: rgba(255, 255, 255, 0.4);
-  --codeBg: #111722;
-  --codeGutterBg: #0d131d;
-  --codeBorder: rgba(255, 255, 255, 0.08);
-  --codeText: rgba(255, 255, 255, 0.9);
-  --inlineCodeBg: #1a2338;
-  --inlineCodeBorder: rgba(129, 140, 248, 0.28);
-  --inlineCodeText: rgba(238, 242, 255, 0.95);
+  --bg: #0b1020;
+  --sidebar: #121831;
+  --header: #171f3c;
+  --canvas: #0c1228;
+  --surface: #141c39;
+  --surface2: #19224a;
+  --surface3: #19224a;
+  --border: rgba(255, 255, 255, 0.06);
+  --border2: rgba(255, 255, 255, 0.09);
+  --divider: rgba(255, 255, 255, 0.05);
+  --text: #e7eaf6;
+  --text2: rgba(231, 234, 246, 0.72);
+  --text3: rgba(231, 234, 246, 0.5);
+  --textDisabled: rgba(231, 234, 246, 0.35);
+  --iconPrimary: rgba(231, 234, 246, 0.8);
+  --iconMuted: rgba(231, 234, 246, 0.55);
+  --inputBg: rgba(255, 255, 255, 0.03);
+  --inputBorder: rgba(255, 255, 255, 0.08);
+  --placeholder: rgba(231, 234, 246, 0.38);
+  --shadow1: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow2: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --codeBg: #141c39;
+  --codeGutterBg: #121831;
+  --codeBorder: rgba(255, 255, 255, 0.06);
+  --codeText: #e7eaf6;
+  --inlineCodeBg: #2a315f;
+  --inlineCodeBorder: color-mix(in srgb, var(--accent) 22%, var(--border));
+  --inlineCodeText: #e7eaf6;
 }
 
 /* App semantic aliases used across components */
@@ -59,6 +88,9 @@
   --tulis-secondary: var(--accent);
   --tulis-bg: var(--bg);
   --tulis-surface: var(--surface);
+  --tulis-sidebar: var(--sidebar, var(--surface));
+  --tulis-header: var(--header, var(--surface));
+  --tulis-canvas: var(--canvas, var(--bg));
   --tulis-text: var(--text);
   --tulis-muted: var(--text2);
   --tulis-border: var(--border);
@@ -148,6 +180,18 @@ select:focus-visible {
   background-color: var(--surface);
 }
 
+.tulis-sidebar {
+  background-color: var(--sidebar, var(--surface));
+}
+
+.tulis-header {
+  background-color: var(--header, var(--surface));
+}
+
+.tulis-canvas {
+  background-color: var(--canvas, var(--bg));
+}
+
 .tulis-text {
   color: var(--text);
 }
@@ -169,13 +213,7 @@ select:focus-visible {
 }
 
 .tulis-return-notes-btn {
-  background-color: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-:root[data-theme='dark'] .tulis-return-notes-btn:hover {
-  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--border2));
-  color: #ffffff;
+  background-color: var(--surface2);
 }
 
 .ProseMirror:focus {
