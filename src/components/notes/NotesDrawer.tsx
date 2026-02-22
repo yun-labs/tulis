@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db, auth } from '@/lib/firebase';
@@ -74,6 +74,13 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
   const [confirmDeleteRowId, setConfirmDeleteRowId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const mobileSidebarCloseSwipeRef = useRef({
+    tracking: false,
+    closed: false,
+    touchId: -1,
+    startX: 0,
+    startY: 0,
+  });
   const lastActiveNoteIdRef = useRef<string | null>(null);
   const previousActiveNoteIdRef = useRef<string | null>(null);
   const currentRouteNoteIdRef = useRef<string>('');
@@ -83,6 +90,91 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
       onClose();
     }
   }, [onClose]);
+
+  const resetMobileSidebarCloseSwipe = useCallback(() => {
+    mobileSidebarCloseSwipeRef.current.tracking = false;
+    mobileSidebarCloseSwipeRef.current.closed = false;
+    mobileSidebarCloseSwipeRef.current.touchId = -1;
+  }, []);
+
+  const findCloseSwipeTouch = useCallback((touches: TouchList) => {
+    const trackedTouchId = mobileSidebarCloseSwipeRef.current.touchId;
+    if (trackedTouchId < 0) return touches[0] ?? null;
+
+    for (let index = 0; index < touches.length; index += 1) {
+      if (touches[index]?.identifier === trackedTouchId) {
+        return touches[index];
+      }
+    }
+
+    return null;
+  }, []);
+
+  const handleMobileSidebarCloseSwipeStart = useCallback((event: ReactTouchEvent<HTMLElement>) => {
+    resetMobileSidebarCloseSwipe();
+
+    if (!isSidebarOpen) return;
+    if (event.touches.length !== 1) return;
+    if (typeof window === 'undefined' || !window.matchMedia('(max-width: 767px)').matches) return;
+
+    const touch = event.touches[0];
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const rightEdgeBand = 56;
+
+    if (touch.clientX < bounds.right - rightEdgeBand) return;
+
+    mobileSidebarCloseSwipeRef.current.tracking = true;
+    mobileSidebarCloseSwipeRef.current.startX = touch.clientX;
+    mobileSidebarCloseSwipeRef.current.startY = touch.clientY;
+    mobileSidebarCloseSwipeRef.current.touchId = touch.identifier;
+  }, [isSidebarOpen, resetMobileSidebarCloseSwipe]);
+
+  const handleMobileSidebarCloseSwipeMove = useCallback((event: TouchEvent) => {
+    const swipe = mobileSidebarCloseSwipeRef.current;
+    if (!swipe.tracking || swipe.closed) return;
+
+    const touch = findCloseSwipeTouch(event.touches);
+    if (!touch) {
+      resetMobileSidebarCloseSwipe();
+      return;
+    }
+
+    const deltaX = touch.clientX - swipe.startX;
+    const deltaY = touch.clientY - swipe.startY;
+
+    if (deltaX > 8) {
+      resetMobileSidebarCloseSwipe();
+      return;
+    }
+
+    if (Math.abs(deltaY) > 56 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      resetMobileSidebarCloseSwipe();
+      return;
+    }
+
+    if (deltaX <= -64 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25) {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      swipe.closed = true;
+      onClose();
+    }
+  }, [findCloseSwipeTouch, onClose, resetMobileSidebarCloseSwipe]);
+
+  const handleMobileSidebarCloseSwipeEnd = useCallback((event: TouchEvent) => {
+    const swipe = mobileSidebarCloseSwipeRef.current;
+    if (!swipe.tracking) return;
+
+    if (event.type === 'touchcancel') {
+      resetMobileSidebarCloseSwipe();
+      return;
+    }
+
+    const stillTrackingTouch = findCloseSwipeTouch(event.touches);
+    if (stillTrackingTouch) return;
+
+    resetMobileSidebarCloseSwipe();
+  }, [findCloseSwipeTouch, resetMobileSidebarCloseSwipe]);
 
   const rawUserName = auth.currentUser?.displayName?.trim() || auth.currentUser?.email?.split('@')[0] || 'User';
   const userDisplayName = rawUserName.split(/\s+/).filter(Boolean)[0] || 'User';
@@ -197,7 +289,29 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
     if (isSidebarOpen) return;
     setOpenRowMenuId(null);
     setConfirmDeleteRowId(null);
-  }, [isSidebarOpen]);
+    resetMobileSidebarCloseSwipe();
+  }, [isSidebarOpen, resetMobileSidebarCloseSwipe]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onTouchMove = (event: TouchEvent) => {
+      handleMobileSidebarCloseSwipeMove(event);
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      handleMobileSidebarCloseSwipeEnd(event);
+    };
+
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [handleMobileSidebarCloseSwipeEnd, handleMobileSidebarCloseSwipeMove]);
 
   useEffect(() => {
     setOpenRowMenuId(null);
@@ -550,6 +664,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
       <aside
         id="notes-drawer"
         className={`fixed inset-y-0 left-0 z-[150] w-[312px] max-w-[calc(100vw-2.5rem)] shrink-0 border-r tulis-border bg-[color:var(--sidebar)] transition-transform duration-200 md:static md:z-auto md:h-full md:max-w-none md:translate-x-0 md:transition-[width] md:duration-200 ${isSidebarOpen ? 'translate-x-0 md:w-[312px]' : '-translate-x-full md:w-0'}`}
+        onTouchStart={handleMobileSidebarCloseSwipeStart}
       >
         <div className={`flex h-full min-h-0 flex-col ${isSidebarOpen ? 'opacity-100' : 'md:pointer-events-none md:opacity-0'}`}>
           <div className="shrink-0 px-3 pb-3 pt-3">
