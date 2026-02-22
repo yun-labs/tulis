@@ -137,6 +137,7 @@ export default function NotePage() {
   const mobileSidebarSwipeRef = useRef({
     tracking: false,
     opened: false,
+    touchId: -1,
     startX: 0,
     startY: 0,
   });
@@ -725,6 +726,20 @@ export default function NotePage() {
   const resetMobileSidebarSwipe = useCallback(() => {
     mobileSidebarSwipeRef.current.tracking = false;
     mobileSidebarSwipeRef.current.opened = false;
+    mobileSidebarSwipeRef.current.touchId = -1;
+  }, []);
+
+  const findTrackedTouch = useCallback((touches: TouchList) => {
+    const trackedTouchId = mobileSidebarSwipeRef.current.touchId;
+    if (trackedTouchId < 0) return touches[0] ?? null;
+
+    for (let index = 0; index < touches.length; index += 1) {
+      if (touches[index]?.identifier === trackedTouchId) {
+        return touches[index];
+      }
+    }
+
+    return null;
   }, []);
 
   const handleMobileSidebarSwipeStart = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
@@ -735,22 +750,30 @@ export default function NotePage() {
     if (typeof window === 'undefined' || !window.matchMedia('(max-width: 767px)').matches) return;
 
     const touch = event.touches[0];
-    if (touch.clientX > 28) return;
+    // Leave the far-left edge to the browser/OS back-swipe gesture.
+    const reservedBackGestureEdge = 28;
+    // Allow the drawer-open swipe from the left side, but not the entire screen.
+    const sidebarSwipeStartMax = Math.min(window.innerWidth * 0.35, 160);
+
+    if (touch.clientX <= reservedBackGestureEdge || touch.clientX > sidebarSwipeStartMax) {
+      return;
+    }
 
     mobileSidebarSwipeRef.current.tracking = true;
     mobileSidebarSwipeRef.current.startX = touch.clientX;
     mobileSidebarSwipeRef.current.startY = touch.clientY;
+    mobileSidebarSwipeRef.current.touchId = touch.identifier;
   }, [isSidebarOpen, resetMobileSidebarSwipe]);
 
-  const handleMobileSidebarSwipeMove = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
+  const handleMobileSidebarSwipeMove = useCallback((event: TouchEvent) => {
     const swipe = mobileSidebarSwipeRef.current;
     if (!swipe.tracking || swipe.opened) return;
-    if (event.touches.length !== 1) {
+
+    const touch = findTrackedTouch(event.touches);
+    if (!touch) {
       resetMobileSidebarSwipe();
       return;
     }
-
-    const touch = event.touches[0];
     const deltaX = touch.clientX - swipe.startX;
     const deltaY = touch.clientY - swipe.startY;
 
@@ -765,14 +788,49 @@ export default function NotePage() {
     }
 
     if (deltaX >= 72 && deltaX > Math.abs(deltaY) * 1.25) {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
       swipe.opened = true;
       setIsSidebarOpen(true);
     }
-  }, [resetMobileSidebarSwipe]);
+  }, [findTrackedTouch, resetMobileSidebarSwipe]);
 
-  const handleMobileSidebarSwipeEnd = useCallback(() => {
+  const handleMobileSidebarSwipeEnd = useCallback((event: TouchEvent) => {
+    const swipe = mobileSidebarSwipeRef.current;
+    if (!swipe.tracking) return;
+
+    if (event.type === 'touchcancel') {
+      resetMobileSidebarSwipe();
+      return;
+    }
+
+    const stillTrackingTouch = findTrackedTouch(event.touches);
+    if (stillTrackingTouch) return;
+
     resetMobileSidebarSwipe();
-  }, [resetMobileSidebarSwipe]);
+  }, [findTrackedTouch, resetMobileSidebarSwipe]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onTouchMove = (event: TouchEvent) => {
+      handleMobileSidebarSwipeMove(event);
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      handleMobileSidebarSwipeEnd(event);
+    };
+
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [handleMobileSidebarSwipeEnd, handleMobileSidebarSwipeMove]);
 
   const runSelectionListShift = useCallback((direction: 'left' | 'right') => {
     if (!editor || isReadOnly) return;
@@ -1156,9 +1214,6 @@ export default function NotePage() {
     <div
       className="flex h-screen w-full overflow-hidden tulis-bg font-sans selection:bg-[color:var(--focusRing)]"
       onTouchStart={handleMobileSidebarSwipeStart}
-      onTouchMove={handleMobileSidebarSwipeMove}
-      onTouchEnd={handleMobileSidebarSwipeEnd}
-      onTouchCancel={handleMobileSidebarSwipeEnd}
     >
       <NotesDrawer
         isSidebarOpen={isSidebarOpen}
@@ -1228,7 +1283,7 @@ export default function NotePage() {
 
             <div className="flex shrink-0 items-center justify-end gap-2">
               {!isReadOnly && ready && (
-                <span className={`inline-flex w-[6.25rem] shrink-0 items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${syncStatus === 'error' ? 'text-red-500' : 'tulis-muted'}`}>
+                <span className={`hidden w-[6.25rem] shrink-0 items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] md:inline-flex ${syncStatus === 'error' ? 'text-red-500' : 'tulis-muted'}`}>
                   {syncStatus === 'loading'
                     ? 'Loading'
                     : syncStatus === 'syncing'

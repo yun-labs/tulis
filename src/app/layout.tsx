@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { MobileInstallBanner } from "@/components/pwa/MobileInstallBanner";
 import { PwaProvider } from "@/components/pwa/PwaProvider";
 import "./globals.css";
@@ -68,6 +70,8 @@ export default function RootLayout({
           {children}
           <MobileInstallBanner />
         </PwaProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
