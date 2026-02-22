@@ -20,6 +20,7 @@ const applyTheme = (theme: Theme | null) => {
 };
 
 export function ThemeToggle() {
+  const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'light';
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -31,6 +32,16 @@ export function ThemeToggle() {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     return stored === 'light' || stored === 'dark';
   });
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setMounted(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(() => {
     if (explicit) {
@@ -62,7 +73,8 @@ export function ThemeToggle() {
     setExplicit(true);
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
-  const nextTheme = theme === 'dark' ? 'light' : 'dark';
+  const renderedTheme = mounted ? theme : 'light';
+  const nextTheme = renderedTheme === 'dark' ? 'light' : 'dark';
   const label = nextTheme === 'dark' ? 'Switch to dark mode' : 'Switch to light mode';
 
   return (
@@ -74,7 +86,7 @@ export function ThemeToggle() {
       title={label}
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        {theme === 'light' ? (
+        {renderedTheme === 'light' ? (
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         ) : (
           <>
