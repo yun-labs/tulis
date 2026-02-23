@@ -119,9 +119,23 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
 
     const touch = event.touches[0];
     const bounds = event.currentTarget.getBoundingClientRect();
-    const rightEdgeBand = 56;
+    const region = (event.currentTarget as HTMLElement).dataset.swipeCloseRegion;
+    const reservedSystemEdge = 28;
 
-    if (touch.clientX < bounds.right - rightEdgeBand) return;
+    if (region === 'overlay') {
+      // Let the literal right edge remain available for native browser/device gestures.
+      const rightSideSwipeBand = Math.max(160, Math.min(window.innerWidth * 0.4, 280));
+      if (
+        touch.clientX < bounds.right - rightSideSwipeBand ||
+        touch.clientX >= bounds.right - reservedSystemEdge
+      ) {
+        return;
+      }
+    } else {
+      // Inside the drawer, allow swiping from a broader right-side zone (not just the exact edge).
+      const drawerRightZone = Math.max(96, Math.min(bounds.width * 0.45, 180));
+      if (touch.clientX < bounds.right - drawerRightZone) return;
+    }
 
     mobileSidebarCloseSwipeRef.current.tracking = true;
     mobileSidebarCloseSwipeRef.current.startX = touch.clientX;
@@ -152,7 +166,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
       return;
     }
 
-    if (deltaX <= -64 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25) {
+    if (deltaX <= -52 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
       if (event.cancelable) {
         event.preventDefault();
       }
@@ -655,14 +669,17 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
     <>
       {isSidebarOpen && (
         <div
+          data-swipe-close-region="overlay"
           className="fixed inset-0 z-[140] bg-black/30 transition-opacity duration-200 md:hidden"
           onClick={onClose}
+          onTouchStart={handleMobileSidebarCloseSwipeStart}
           aria-hidden="true"
         />
       )}
 
       <aside
         id="notes-drawer"
+        data-swipe-close-region="drawer"
         className={`fixed inset-y-0 left-0 z-[150] w-[312px] max-w-[calc(100vw-2.5rem)] shrink-0 border-r tulis-border bg-[color:var(--sidebar)] transition-transform duration-200 md:static md:z-auto md:h-full md:max-w-none md:translate-x-0 md:transition-[width] md:duration-200 ${isSidebarOpen ? 'translate-x-0 md:w-[312px]' : '-translate-x-full md:w-0'}`}
         onTouchStart={handleMobileSidebarCloseSwipeStart}
       >

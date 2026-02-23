@@ -221,6 +221,13 @@ select:focus-visible {
   box-shadow: none;
 }
 
+.ProseMirror,
+.prose .ProseMirror {
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: common-ligatures contextual;
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
 .ProseMirror a,
 .prose .ProseMirror a {
   color: var(--accent);
@@ -621,11 +628,22 @@ select:focus-visible {
 .prose .ProseMirror :not(pre) > code {
   font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
+  font-variant-ligatures: none;
+  font-feature-settings: normal;
   color: var(--inlineCodeText);
   background: var(--inlineCodeBg);
   border: 1px solid var(--inlineCodeBorder);
   border-radius: 0.35rem;
   padding: 0.12em 0.38em;
+}
+
+.ProseMirror pre,
+.ProseMirror pre code,
+.prose .ProseMirror pre,
+.prose .ProseMirror pre code {
+  font-variant-ligatures: none;
+  font-feature-settings: normal;
+  text-rendering: auto;
 }
 
 .ProseMirror [data-tag-chip] {
