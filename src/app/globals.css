@@ -48,38 +48,54 @@
   --inlineCodeBg: #eef1ff;
   --inlineCodeBorder: color-mix(in srgb, var(--accent) 22%, var(--border));
   --inlineCodeText: #1f2435;
+  --accentTintUi: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accentTintSurface: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --dangerSolid: #dc2626;
+  --dangerSolidHover: #b91c1c;
+  --dangerText: color-mix(in srgb, var(--text) 62%, #dc2626);
+  --dangerTextStrong: color-mix(in srgb, var(--text) 42%, #dc2626);
+  --dangerTint: color-mix(in srgb, #dc2626 10%, var(--surface2));
+  --dangerBorder: color-mix(in srgb, #dc2626 26%, var(--border));
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0b1020;
-  --sidebar: #121831;
-  --header: #171f3c;
-  --canvas: #0c1228;
-  --surface: #141c39;
-  --surface2: #19224a;
-  --surface3: #19224a;
-  --border: rgba(255, 255, 255, 0.06);
-  --border2: rgba(255, 255, 255, 0.09);
-  --divider: rgba(255, 255, 255, 0.05);
-  --text: #e7eaf6;
-  --text2: rgba(231, 234, 246, 0.72);
-  --text3: rgba(231, 234, 246, 0.5);
-  --textDisabled: rgba(231, 234, 246, 0.35);
-  --iconPrimary: rgba(231, 234, 246, 0.8);
-  --iconMuted: rgba(231, 234, 246, 0.55);
-  --inputBg: rgba(255, 255, 255, 0.03);
-  --inputBorder: rgba(255, 255, 255, 0.08);
-  --placeholder: rgba(231, 234, 246, 0.38);
+  --bg: #0b0b0c;
+  --sidebar: #101012;
+  --header: #121214;
+  --canvas: #0f0f10;
+  --surface: #171718;
+  --surface2: #1f2022;
+  --surface3: #27292c;
+  --border: rgba(255, 255, 255, 0.07);
+  --border2: rgba(255, 255, 255, 0.11);
+  --divider: rgba(255, 255, 255, 0.06);
+  --text: #eef0f4;
+  --text2: rgba(238, 240, 244, 0.72);
+  --text3: rgba(238, 240, 244, 0.48);
+  --textDisabled: rgba(238, 240, 244, 0.34);
+  --iconPrimary: rgba(238, 240, 244, 0.82);
+  --iconMuted: rgba(238, 240, 244, 0.56);
+  --inputBg: rgba(255, 255, 255, 0.035);
+  --inputBorder: rgba(255, 255, 255, 0.09);
+  --placeholder: rgba(238, 240, 244, 0.36);
   --shadow1: 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow2: 0 12px 40px rgba(0, 0, 0, 0.45);
-  --codeBg: #141c39;
-  --codeGutterBg: #121831;
+  --codeBg: #171717;
+  --codeGutterBg: #121212;
   --codeBorder: rgba(255, 255, 255, 0.06);
-  --codeText: #e7eaf6;
-  --inlineCodeBg: #2a315f;
+  --codeText: #eef0f4;
+  --inlineCodeBg: #262626;
   --inlineCodeBorder: color-mix(in srgb, var(--accent) 22%, var(--border));
-  --inlineCodeText: #e7eaf6;
+  --inlineCodeText: #eef0f4;
+  --accentTintUi: color-mix(in srgb, var(--accent) 8%, transparent);
+  --accentTintSurface: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  --dangerSolid: #ef4444;
+  --dangerSolidHover: #dc2626;
+  --dangerText: color-mix(in srgb, var(--text) 58%, #f87171);
+  --dangerTextStrong: color-mix(in srgb, var(--text) 36%, #f87171);
+  --dangerTint: color-mix(in srgb, #ef4444 12%, var(--surface2));
+  --dangerBorder: color-mix(in srgb, #ef4444 24%, var(--border));
 }
 
 /* App semantic aliases used across components */
@@ -651,7 +667,7 @@ select:focus-visible {
   align-items: center;
   border-radius: 9999px;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: var(--accentTintSurface);
   color: var(--accent);
   padding: 0.1rem 0.65rem;
   margin: 0 0.15rem;

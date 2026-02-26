@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { FiLogOut, FiMonitor, FiMoon, FiSettings, FiSun } from 'react-icons/fi';
 import { db, auth } from '@/lib/firebase';
 import {
   deleteDoc,
@@ -16,7 +17,6 @@ import {
   where,
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { appNoteDoc, appNotesCollection } from '@/lib/firestorePaths';
 import { matchesNoteSearch, normalizeLabel, notePreview, parseSearchFilters } from '@/lib/notes';
 import { createEmptyNoteForUser, ensureUserHasNote } from '@/lib/notesLifecycle';
@@ -42,6 +42,25 @@ type NotesDrawerProps = {
 
 type SidebarView = 'all' | 'pinned';
 type SidebarMode = 'notes' | 'trash';
+type ThemeMode = 'light' | 'dark';
+type ThemePreference = ThemeMode | 'system';
+
+const THEME_STORAGE_KEY = 'theme';
+
+function resolveSystemTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyThemePreference(preference: ThemePreference) {
+  if (typeof document === 'undefined') return;
+
+  const resolvedTheme = preference === 'system' ? resolveSystemTheme() : preference;
+  document.documentElement.setAttribute('data-theme', resolvedTheme);
+  document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
+  document.documentElement.style.colorScheme = resolvedTheme;
+}
+
 const SIDEBAR_VIEW_OPTIONS: Array<{ value: SidebarView; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'pinned', label: 'Pinned' },
@@ -64,6 +83,7 @@ function normalizeLabelArray(value: unknown): string[] {
 }
 
 export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSidebarModeChange, onClose }: NotesDrawerProps) {
+  const SETTINGS_SHEET_ANIMATION_MS = 200;
   const router = useRouter();
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [searchInput, setSearchInput] = useState('');
@@ -73,7 +93,17 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
   const [confirmDeleteRowId, setConfirmDeleteRowId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [settingsSheetOpen, setSettingsSheetOpen] = useState(false);
+  const [settingsSheetVisible, setSettingsSheetVisible] = useState(false);
+  const [signOutArmed, setSignOutArmed] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [usesFinePointer, setUsesFinePointer] = useState(false);
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
+    if (typeof window === 'undefined') return 'system';
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+    return 'system';
+  });
   const mobileSidebarCloseSwipeRef = useRef({
     tracking: false,
     closed: false,
@@ -84,12 +114,81 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
   const lastActiveNoteIdRef = useRef<string | null>(null);
   const previousActiveNoteIdRef = useRef<string | null>(null);
   const currentRouteNoteIdRef = useRef<string>('');
+  const settingsSheetCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const signOutArmTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const closeOnMobile = useCallback(() => {
     if (window.matchMedia('(max-width: 767px)').matches) {
       onClose();
     }
   }, [onClose]);
+
+  const openSettingsSheet = useCallback(() => {
+    if (settingsSheetCloseTimeoutRef.current) {
+      clearTimeout(settingsSheetCloseTimeoutRef.current);
+      settingsSheetCloseTimeoutRef.current = null;
+    }
+    setSettingsSheetOpen(true);
+  }, []);
+
+  const closeSettingsSheet = useCallback((options?: { immediate?: boolean }) => {
+    const immediate = options?.immediate === true;
+
+    if (settingsSheetCloseTimeoutRef.current) {
+      clearTimeout(settingsSheetCloseTimeoutRef.current);
+      settingsSheetCloseTimeoutRef.current = null;
+    }
+
+    setSettingsSheetVisible(false);
+
+    if (immediate) {
+      setSettingsSheetOpen(false);
+      return;
+    }
+
+    settingsSheetCloseTimeoutRef.current = window.setTimeout(() => {
+      setSettingsSheetOpen(false);
+      settingsSheetCloseTimeoutRef.current = null;
+    }, SETTINGS_SHEET_ANIMATION_MS);
+  }, []);
+
+  const armSignOut = useCallback(() => {
+    setSignOutArmed(true);
+    if (signOutArmTimeoutRef.current) {
+      clearTimeout(signOutArmTimeoutRef.current);
+    }
+    signOutArmTimeoutRef.current = window.setTimeout(() => {
+      setSignOutArmed(false);
+      signOutArmTimeoutRef.current = null;
+    }, 2200);
+  }, []);
+
+  const handleSettingsSignOut = useCallback(async () => {
+    if (isSigningOut) return;
+
+    if (!signOutArmed) {
+      armSignOut();
+      return;
+    }
+
+    if (signOutArmTimeoutRef.current) {
+      clearTimeout(signOutArmTimeoutRef.current);
+      signOutArmTimeoutRef.current = null;
+    }
+
+    setSignOutArmed(false);
+    setIsSigningOut(true);
+    closeSettingsSheet({ immediate: true });
+
+    try {
+      await signOut(auth);
+      router.replace('/login');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+      setIsSigningOut(false);
+      openSettingsSheet();
+    }
+  }, [armSignOut, closeSettingsSheet, isSigningOut, openSettingsSheet, router, signOutArmed]);
 
   const resetMobileSidebarCloseSwipe = useCallback(() => {
     mobileSidebarCloseSwipeRef.current.tracking = false;
@@ -192,6 +291,8 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
 
   const rawUserName = auth.currentUser?.displayName?.trim() || auth.currentUser?.email?.split('@')[0] || 'User';
   const userDisplayName = rawUserName.split(/\s+/).filter(Boolean)[0] || 'User';
+  const signOutToneIdle = 'var(--dangerText)';
+  const signOutToneArmed = 'var(--dangerTextStrong)';
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -200,6 +301,98 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
 
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
+
+  useEffect(() => {
+    applyThemePreference(themePreference);
+
+    if (typeof window === 'undefined') return;
+    if (themePreference === 'system') {
+      window.localStorage.removeItem(THEME_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(THEME_STORAGE_KEY, themePreference);
+  }, [themePreference]);
+
+  useEffect(() => {
+    if (themePreference !== 'system') return;
+    if (typeof window === 'undefined') return;
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      applyThemePreference('system');
+    };
+
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, [themePreference]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const media = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const sync = () => setUsesFinePointer(media.matches);
+
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    if (!settingsSheetOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeSettingsSheet();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [closeSettingsSheet, settingsSheetOpen]);
+
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      closeSettingsSheet({ immediate: true });
+    }
+  }, [closeSettingsSheet, isSidebarOpen]);
+
+  useEffect(() => {
+    if (settingsSheetOpen) return;
+
+    setSignOutArmed(false);
+    if (signOutArmTimeoutRef.current) {
+      clearTimeout(signOutArmTimeoutRef.current);
+      signOutArmTimeoutRef.current = null;
+    }
+  }, [settingsSheetOpen]);
+
+  useEffect(() => {
+    if (!settingsSheetOpen) {
+      setSettingsSheetVisible(false);
+      return;
+    }
+
+    setSettingsSheetVisible(false);
+    const frame = window.requestAnimationFrame(() => {
+      setSettingsSheetVisible(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [settingsSheetOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (settingsSheetCloseTimeoutRef.current) {
+        clearTimeout(settingsSheetCloseTimeoutRef.current);
+      }
+      if (signOutArmTimeoutRef.current) {
+        clearTimeout(signOutArmTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -627,7 +820,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
                         setOpenRowMenuId(null);
                         void moveToTrash(note.id);
                       }}
-                      className="mt-0.5 flex w-full items-center rounded-[calc(var(--rSm)-4px)] px-2 py-1.5 text-left text-xs text-red-500 transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
+                      className="mt-0.5 flex w-full items-center rounded-[calc(var(--rSm)-4px)] px-2 py-1.5 text-left text-xs text-[color:var(--dangerText)] transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
                     >
                       Move to Trash
                     </button>
@@ -651,7 +844,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
                         setConfirmDeleteRowId(note.id);
                       }}
                       disabled={deletingId === note.id}
-                      className="mt-0.5 flex w-full items-center rounded-[calc(var(--rSm)-4px)] px-2 py-1.5 text-left text-xs text-red-500 transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
+                      className="mt-0.5 flex w-full items-center rounded-[calc(var(--rSm)-4px)] px-2 py-1.5 text-left text-xs text-[color:var(--dangerText)] transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
                     >
                       Permanently delete
                     </button>
@@ -684,27 +877,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
         onTouchStart={handleMobileSidebarCloseSwipeStart}
       >
         <div className={`flex h-full min-h-0 flex-col ${isSidebarOpen ? 'opacity-100' : 'md:pointer-events-none md:opacity-0'}`}>
-          <div className="shrink-0 px-3 pb-3 pt-3">
-            <div className="flex items-center justify-between gap-2">
-              <Link href="/notes" onClick={closeOnMobile} className="shrink-0 text-left leading-none">
-                <span className="block text-base font-black tracking-tight lowercase tulis-text">tulis</span>
-                <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] tulis-muted opacity-70" style={{ fontFamily: 'var(--font-geist-mono)' }}>
-                  by yun
-                </span>
-              </Link>
-
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close drawer"
-                className="group flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border tulis-border bg-[color:var(--surface)] transition-colors hover:border-[color:var(--border)] hover:bg-[color:var(--surface2)] md:hidden"
-              >
-                <svg className="h-4 w-4 tulis-muted transition-colors group-hover:text-[color:var(--text)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
-                  <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-
+          <div className="shrink-0 px-3 pb-3 pt-4">
             <button
               type="button"
               onClick={() => {
@@ -716,7 +889,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
               }}
               aria-label={sidebarMode === 'trash' ? 'Return to notes' : 'Create new note'}
               title={sidebarMode === 'trash' ? 'Return to notes' : 'Create new note'}
-              className={`mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[var(--rSm)] px-3 text-sm font-medium transition-colors ${sidebarMode === 'trash'
+              className={`flex h-10 w-full items-center justify-center gap-2 rounded-[var(--rSm)] px-3 text-sm font-medium transition-colors ${sidebarMode === 'trash'
                 ? 'tulis-return-notes-btn border border-[color:var(--border2)] text-[color:var(--text2)] hover:bg-[color:var(--surface)] hover:text-[color:var(--text)]'
                 : 'bg-[color:var(--accent)] text-white transition-colors duration-150 hover:bg-[color:var(--accentHover)] active:bg-[color:var(--accentActive)]'
                 }`}
@@ -778,7 +951,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
                           ? 'text-[color:var(--accent)]'
                           : 'bg-transparent text-[color:var(--text2)] hover:text-[color:var(--text)]'
                           }`}
-                        style={isActive ? { backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)' } : undefined}
+                        style={isActive ? { backgroundColor: 'var(--accentTintUi)' } : undefined}
                       >
                         {option.label}
                       </button>
@@ -834,11 +1007,9 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-xs font-semibold tulis-text">{userDisplayName}</p>
-                <p className="truncate text-xs tulis-muted">Yun Labs</p>
               </div>
 
               <div className="flex items-center gap-1.5">
-                <ThemeToggle />
                 <button
                   type="button"
                   onClick={() => {
@@ -865,20 +1036,136 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
                 </button>
                 <button
                   type="button"
-                  onClick={() => setConfirmingLogout(true)}
+                  onClick={openSettingsSheet}
                   className="flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text2)] transition-colors duration-150 hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)]"
-                  title="Logout"
-                  aria-label="Logout"
+                  title="Open settings"
+                  aria-label="Open settings"
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
+                  <FiSettings className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
           </div>
         </div>
       </aside>
+
+      {settingsSheetOpen && (
+        <>
+          <div
+            className={`fixed inset-0 z-[160] bg-black/45 backdrop-blur-md transition-opacity duration-200 ${settingsSheetVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={() => closeSettingsSheet()}
+            aria-hidden="true"
+          />
+          <div
+            className="fixed inset-0 z-[161] flex items-end justify-center p-0 sm:items-center sm:p-4"
+            onClick={() => closeSettingsSheet()}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Settings menu"
+              onClick={(event) => event.stopPropagation()}
+              className={`tulis-surface flex w-full max-w-[420px] flex-col overflow-x-hidden overflow-y-auto overscroll-contain border-t border-[color:var(--border)] shadow-[var(--shadow2)] transition-all duration-200 ease-out motion-reduce:transition-none sm:rounded-[var(--rLg)] sm:border sm:tulis-border ${settingsSheetVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 sm:translate-y-10 sm:scale-[0.985] opacity-0'} rounded-t-[22px] sm:rounded-t-[var(--rLg)]`}
+              style={{
+                maxHeight: 'min(88dvh, 720px)',
+                paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+              }}
+            >
+              <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-[color:var(--text3)] opacity-35 sm:hidden" aria-hidden="true" />
+
+              <div className="flex flex-col">
+                <div className="shrink-0 px-5 pb-3.5 pt-3 sm:px-6 sm:pb-4 sm:pt-4">
+                  <div className="relative flex justify-center">
+                    <div className="text-center leading-none">
+                      <p className="text-[15px] font-black leading-[0.95] tracking-tight lowercase tulis-text">tulis</p>
+                      <p
+                        className="mt-1 text-[8.5px] uppercase tracking-[0.14em] tulis-muted opacity-60"
+                        style={{ fontFamily: 'var(--font-geist-mono)' }}
+                      >
+                        by yun
+                      </p>
+                      <p className="mt-4.5 mb-1 font-sans text-[13px] font-medium leading-tight tulis-muted opacity-80">Hi, {userDisplayName}.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => closeSettingsSheet()}
+                      className="absolute right-0 top-0 flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--text3)] transition-colors hover:bg-[color:var(--surface2)] hover:text-[color:var(--text2)]"
+                      aria-label="Close settings"
+                      title="Close settings"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                        <path d="M18 6 6 18" strokeLinecap="round" />
+                        <path d="m6 6 12 12" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-5 py-3.5 sm:px-6 sm:py-4">
+                  <div className="space-y-3.5 sm:space-y-4">
+                    <section>
+                      <div
+                        role="radiogroup"
+                        aria-label="Theme preference"
+                        className="inline-flex h-10 w-full items-center rounded-[calc(var(--rSm)-2px)] border border-[color:var(--border2)] bg-transparent p-0.5"
+                      >
+                        {[
+                          { value: 'light', label: 'Light', Icon: FiSun },
+                          { value: 'dark', label: 'Dark', Icon: FiMoon },
+                          { value: 'system', label: 'System', Icon: FiMonitor },
+                        ].map(({ value, label, Icon }) => {
+                          const selected = themePreference === value;
+
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              onClick={() => setThemePreference(value as ThemePreference)}
+                              className={`flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[calc(var(--rSm)-4px)] px-2 text-[13px] font-medium tracking-[0.02em] transition-colors ${selected
+                                ? 'text-[color:var(--accent)]'
+                                : 'bg-transparent text-[color:var(--text2)] hover:text-[color:var(--text)]'
+                                }`}
+                              style={{
+                                backgroundColor: selected ? 'var(--accentTintUi)' : undefined,
+                              }}
+                            >
+                              <Icon className="h-4 w-4" aria-hidden="true" />
+                              <span>{label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+
+                    <section>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleSettingsSignOut();
+                        }}
+                        disabled={isSigningOut}
+                        className={`flex min-h-10 w-full items-center justify-center gap-2.5 rounded-xl px-0 py-1.5 text-center text-sm font-medium transition ${isSigningOut
+                          ? 'cursor-not-allowed text-[color:var(--text3)] opacity-70'
+                          : ''}`}
+                        style={!isSigningOut ? {
+                          color: signOutArmed ? signOutToneArmed : signOutToneIdle,
+                        } : undefined}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <FiLogOut className="h-4 w-4" aria-hidden="true" />
+                          <span>{isSigningOut ? 'Signing out…' : signOutArmed ? (usesFinePointer ? 'Click again to confirm' : 'Tap again to confirm') : 'Sign Out'}</span>
+                        </span>
+                      </button>
+                    </section>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {confirmDeleteRowId && (
         <div className="fixed inset-0 z-[171] flex items-center justify-center bg-black/40 px-4">
@@ -897,7 +1184,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
                   setConfirmDeleteRowId(null);
                 }}
                 disabled={deletingId === confirmDeleteRowId}
-                className="w-full rounded-[var(--rMd)] bg-red-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-60"
+                className="w-full rounded-[var(--rMd)] bg-[color:var(--dangerSolid)] py-3 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--dangerSolidHover)] disabled:opacity-60"
               >
                 {deletingId === confirmDeleteRowId ? 'Deleting…' : 'Yes, permanently delete'}
               </button>
@@ -912,31 +1199,6 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
         </div>
       )}
 
-      {confirmingLogout && (
-        <div className="fixed inset-0 z-[170] flex items-center justify-center bg-black/40 px-4">
-          <div className="tulis-surface w-full max-w-[320px] rounded-[var(--rLg)] border tulis-border p-8">
-            <h2 className="mb-2 text-center text-xl font-bold tracking-tight tulis-text">Log out?</h2>
-            <p className="mb-8 text-center text-sm tulis-muted">You will need to sign in again to access your notes.</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={async () => {
-                  await signOut(auth);
-                  router.replace('/login');
-                }}
-                className="w-full rounded-[var(--rMd)] bg-[color:var(--accent)] py-3 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--accentHover)]"
-              >
-                Yes, log out
-              </button>
-              <button
-                onClick={() => setConfirmingLogout(false)}
-                className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] py-3 text-sm font-semibold tulis-text transition-colors hover:bg-[color:var(--surface2)]"
-              >
-                Stay signed in
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

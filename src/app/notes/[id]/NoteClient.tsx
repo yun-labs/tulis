@@ -197,6 +197,7 @@ export default function NoteClient() {
   const labelInputRef = useRef<HTMLInputElement | null>(null);
   const labelPopoverRef = useRef<HTMLDivElement | null>(null);
   const editorScrollRef = useRef<HTMLElement | null>(null);
+  const editorColumnRef = useRef<HTMLDivElement | null>(null);
   const lastSelectionRangeRef = useRef<{ from: number; to: number } | null>(null);
   const selectionGestureActiveRef = useRef(false);
   const mobileSidebarSwipeRef = useRef({
@@ -1401,7 +1402,7 @@ export default function NoteClient() {
 
             <div className="flex shrink-0 items-center justify-end gap-2">
               {!isReadOnly && ready && (
-                <span className={`hidden w-[6.25rem] shrink-0 items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] md:inline-flex ${syncStatus === 'error' ? 'text-red-500' : 'tulis-muted'}`}>
+                <span className={`hidden w-[6.25rem] shrink-0 items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] md:inline-flex ${syncStatus === 'error' ? 'text-[color:var(--dangerText)]' : 'tulis-muted'}`}>
                   {syncStatus === 'loading'
                     ? 'Loading'
                     : syncStatus === 'syncing'
@@ -1415,7 +1416,7 @@ export default function NoteClient() {
                       : syncStatus === 'loading'
                         ? 'bg-[color:var(--text3)]'
                       : syncStatus === 'error'
-                        ? 'bg-red-500'
+                        ? 'bg-[color:var(--dangerSolid)]'
                         : 'bg-[color:var(--text2)]'
                       }`}
                   />
@@ -1542,7 +1543,7 @@ export default function NoteClient() {
                           onClick={() => {
                             void moveCurrentNoteToTrash();
                           }}
-                          className="mt-0.5 flex w-full items-center rounded-[calc(var(--rSm)-2px)] px-2.5 py-2 text-left text-xs text-red-500 transition-colors hover:bg-[color:var(--surface2)]"
+                          className="mt-0.5 flex w-full items-center rounded-[calc(var(--rSm)-2px)] px-2.5 py-2 text-left text-xs text-[color:var(--dangerText)] transition-colors hover:bg-[color:var(--surface2)]"
                         >
                           Move to Trash
                         </button>
@@ -1665,6 +1666,7 @@ export default function NoteClient() {
             if (isReadOnly) return;
             const target = event.target as HTMLElement | null;
             if (target?.closest('.ProseMirror')) return;
+            if (editorColumnRef.current && target && !editorColumnRef.current.contains(target)) return;
             event.preventDefault();
             editor.commands.focus('end');
           }}
@@ -1695,7 +1697,7 @@ export default function NoteClient() {
                     <button
                       type="button"
                       onClick={() => setConfirmPermanentDeleteOpen(true)}
-                      className="h-8 rounded-[var(--rSm)] border border-red-500/35 px-2.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/10"
+                      className="h-8 rounded-[var(--rSm)] border border-[color:var(--dangerBorder)] px-2.5 text-xs font-medium text-[color:var(--dangerText)] transition-colors hover:bg-[color:var(--dangerTint)]"
                     >
                       Permanently delete
                     </button>
@@ -1714,7 +1716,7 @@ export default function NoteClient() {
               </div>
             </div>
           ) : (
-            <div className="mx-auto min-h-[60vh] max-w-[840px] min-w-0">
+            <div ref={editorColumnRef} className="mx-auto min-h-[60vh] max-w-[840px] min-w-0">
               {!ready ? (
                 <div className="space-y-3 pt-1" aria-hidden="true">
                   <div className="h-5 w-[58%] rounded bg-[color:var(--surface2)]" />
@@ -1836,7 +1838,7 @@ export default function NoteClient() {
                 onClick={() => {
                   void permanentlyDeleteCurrentNote();
                 }}
-                className="w-full rounded-[var(--rMd)] bg-red-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+                className="w-full rounded-[var(--rMd)] bg-[color:var(--dangerSolid)] py-3 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--dangerSolidHover)]"
               >
                 Yes, permanently delete
               </button>
