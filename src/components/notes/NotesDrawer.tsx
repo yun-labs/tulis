@@ -1065,7 +1065,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
               aria-modal="true"
               aria-label="Settings menu"
               onClick={(event) => event.stopPropagation()}
-              className={`tulis-surface flex w-full max-w-[420px] flex-col overflow-x-hidden overflow-y-auto overscroll-contain border-t border-[color:var(--border)] shadow-[var(--shadow2)] transition-all duration-200 ease-out motion-reduce:transition-none sm:rounded-[var(--rLg)] sm:border sm:tulis-border ${settingsSheetVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 sm:translate-y-10 sm:scale-[0.985] opacity-0'} rounded-t-[22px] sm:rounded-t-[var(--rLg)]`}
+              className={`tulis-surface flex w-full max-w-[420px] flex-col overflow-x-hidden overflow-y-auto overscroll-contain shadow-[var(--shadow2)] transition-all duration-200 ease-out motion-reduce:transition-none sm:rounded-[var(--rLg)] ${settingsSheetVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 sm:translate-y-10 sm:scale-[0.985] opacity-0'} rounded-t-[22px] sm:rounded-t-[var(--rLg)]`}
               style={{
                 maxHeight: 'min(88dvh, 720px)',
                 paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
@@ -1074,7 +1074,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
               <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-[color:var(--text3)] opacity-35 sm:hidden" aria-hidden="true" />
 
               <div className="flex flex-col">
-                <div className="shrink-0 px-5 pb-2.5 pt-3 sm:px-6 sm:pb-3 sm:pt-4">
+                <div className="shrink-0 px-5 pb-2.5 pt-5 sm:px-6 sm:pb-3 sm:pt-6">
                   <div className="relative flex justify-center">
                     <div className="text-center leading-none">
                       <p className="text-[15px] font-black leading-[0.95] tracking-tight lowercase tulis-text">tulis</p>
