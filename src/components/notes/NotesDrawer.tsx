@@ -1006,7 +1006,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
           <div className="shrink-0 border-t border-[color:var(--border2)] px-3 py-3">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate text-xs font-semibold tulis-text">{userDisplayName}</p>
+                <p className="truncate text-xs font-medium tulis-muted">Hi, {userDisplayName}.</p>
               </div>
 
               <div className="flex items-center gap-1.5">
@@ -1065,7 +1065,7 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
               aria-modal="true"
               aria-label="Settings menu"
               onClick={(event) => event.stopPropagation()}
-              className={`tulis-surface flex w-full max-w-[420px] flex-col overflow-x-hidden overflow-y-auto overscroll-contain border-t border-[color:var(--border)] shadow-[var(--shadow2)] transition-all duration-200 ease-out motion-reduce:transition-none sm:rounded-[var(--rLg)] sm:border sm:tulis-border ${settingsSheetVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 sm:translate-y-10 sm:scale-[0.985] opacity-0'} rounded-t-[22px] sm:rounded-t-[var(--rLg)]`}
+              className={`tulis-surface flex w-full max-w-[420px] flex-col overflow-x-hidden overflow-y-auto overscroll-contain shadow-[var(--shadow2)] transition-all duration-200 ease-out motion-reduce:transition-none sm:rounded-[var(--rLg)] ${settingsSheetVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 sm:translate-y-10 sm:scale-[0.985] opacity-0'} rounded-t-[22px] sm:rounded-t-[var(--rLg)]`}
               style={{
                 maxHeight: 'min(88dvh, 720px)',
                 paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
@@ -1074,17 +1074,16 @@ export function NotesDrawer({ isSidebarOpen, currentNoteId, sidebarMode, onSideb
               <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-[color:var(--text3)] opacity-35 sm:hidden" aria-hidden="true" />
 
               <div className="flex flex-col">
-                <div className="shrink-0 px-5 pb-3.5 pt-3 sm:px-6 sm:pb-4 sm:pt-4">
+                <div className="shrink-0 px-5 pb-2.5 pt-5 sm:px-6 sm:pb-3 sm:pt-6">
                   <div className="relative flex justify-center">
                     <div className="text-center leading-none">
                       <p className="text-[15px] font-black leading-[0.95] tracking-tight lowercase tulis-text">tulis</p>
                       <p
                         className="mt-1 text-[8.5px] uppercase tracking-[0.14em] tulis-muted opacity-60"
                         style={{ fontFamily: 'var(--font-geist-mono)' }}
-                      >
-                        by yun
-                      </p>
-                      <p className="mt-4.5 mb-1 font-sans text-[13px] font-medium leading-tight tulis-muted opacity-80">Hi, {userDisplayName}.</p>
+                        >
+                          by yun
+                        </p>
                     </div>
                     <button
                       type="button"
