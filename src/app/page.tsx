@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { ensureUserAppRegistration } from '@/lib/userRegistration';
+import { resolveTulisRegistration } from '@/lib/userRegistration';
 import { ensureUserHasNote } from '@/lib/notesLifecycle';
 import { LoadingNotesScreen } from '@/components/LoadingNotesScreen';
 
@@ -19,9 +19,13 @@ export default function Home() {
       }
 
       try {
-        await ensureUserAppRegistration(user);
+        const registration = await resolveTulisRegistration(user);
+        if (registration.status === 'activation_required') {
+          router.replace('/login');
+          return;
+        }
       } catch (error) {
-        console.error('Failed to ensure user app registration:', error);
+        console.error('Failed to resolve user app registration:', error);
       }
 
       try {

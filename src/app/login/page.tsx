@@ -1,5 +1,5 @@
 'use client';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import {
@@ -12,9 +12,10 @@ import {
   sendPasswordResetEmail,
   onAuthStateChanged,
   getRedirectResult,
+  signOut,
   updateProfile,
 } from 'firebase/auth';
-import { ensureUserAppRegistration } from '@/lib/userRegistration';
+import { activateExistingSharedUserForTulis, resolveTulisRegistration } from '@/lib/userRegistration';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 function getFriendlyAuthError(error: unknown, fallback: string) {
@@ -57,6 +58,11 @@ export default function Login() {
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
+  const [activationUser, setActivationUser] = useState<User | null>(null);
+  const [activationLoading, setActivationLoading] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
+  const [sessionCheckLoading, setSessionCheckLoading] = useState(() => Boolean(auth.currentUser));
+  const registrationResolveRunRef = useRef(0);
 
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
@@ -68,6 +74,71 @@ export default function Login() {
     : isSignUp
       ? Boolean(trimmedName) && hasEmailShape && password.length >= 6 && confirmPassword === password
       : hasEmailShape && password.length > 0;
+  const activationUserName = activationUser?.displayName?.trim() || activationUser?.email?.split('@')[0] || 'there';
+  const activationUserEmail = activationUser?.email?.trim() || '';
+  const showActivationFlow = Boolean(activationUser);
+  const showSignedInCheck = sessionCheckLoading && Boolean(auth.currentUser) && !showActivationFlow;
+
+  const handleSignedInUser = useCallback(async (user: User) => {
+    const runId = ++registrationResolveRunRef.current;
+    setSessionCheckLoading(true);
+    setError(null);
+    setActivationError(null);
+
+    try {
+      const registration = await resolveTulisRegistration(user);
+
+      if (registrationResolveRunRef.current !== runId) return;
+
+      if (registration.status === 'activation_required') {
+        setActivationUser(user);
+        setLoading(false);
+        return;
+      }
+
+      setActivationUser(null);
+      router.replace('/notes');
+    } catch (err: unknown) {
+      if (registrationResolveRunRef.current !== runId) return;
+      setActivationUser(null);
+      setError(getFriendlyAuthError(err, 'Could not load your Tulis access.'));
+      setLoading(false);
+    } finally {
+      if (registrationResolveRunRef.current === runId) {
+        setSessionCheckLoading(false);
+      }
+    }
+  }, [router]);
+
+  const handleActivateTulis = async () => {
+    if (!activationUser) return;
+
+    setActivationError(null);
+    setActivationLoading(true);
+
+    try {
+      await activateExistingSharedUserForTulis(activationUser);
+      await handleSignedInUser(activationUser);
+    } catch (err: unknown) {
+      setActivationError(getFriendlyAuthError(err, 'Could not activate Tulis for your account.'));
+    } finally {
+      setActivationLoading(false);
+    }
+  };
+
+  const handleActivationSignOut = async () => {
+    setActivationError(null);
+    setActivationLoading(true);
+
+    try {
+      await signOut(auth);
+      setActivationUser(null);
+    } catch (err: unknown) {
+      setActivationError(getFriendlyAuthError(err, 'Could not sign out right now.'));
+    } finally {
+      setActivationLoading(false);
+    }
+  };
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -102,8 +173,7 @@ export default function Login() {
         signedInUser = credential.user;
       }
 
-      await ensureUserAppRegistration(signedInUser);
-      router.replace('/notes');
+      await handleSignedInUser(signedInUser);
     } catch (err: unknown) {
       setError(getFriendlyAuthError(err, `Could not ${isSignUp ? 'create your account' : 'sign you in'}.`));
     } finally {
@@ -121,8 +191,7 @@ export default function Login() {
 
       // Popup is more reliable for preserving auth state in this app flow.
       const credential = await signInWithPopup(auth, provider);
-      await ensureUserAppRegistration(credential.user);
-      router.replace('/notes');
+      await handleSignedInUser(credential.user);
     } catch (err: unknown) {
       const code = typeof err === 'object' && err && 'code' in err
         ? String((err as { code?: string }).code || '')
@@ -167,9 +236,7 @@ export default function Login() {
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
-          ensureUserAppRegistration(result.user).finally(() => {
-            router.replace('/notes');
-          });
+          void handleSignedInUser(result.user);
         }
       })
       .catch((err) => {
@@ -180,15 +247,20 @@ export default function Login() {
       });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        ensureUserAppRegistration(user).finally(() => {
-          router.replace('/notes');
-        });
+      if (!user) {
+        registrationResolveRunRef.current += 1;
+        setSessionCheckLoading(false);
+        setActivationUser(null);
+        setActivationError(null);
+        setLoading(false);
+        return;
       }
+
+      void handleSignedInUser(user);
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [handleSignedInUser]);
 
   return (
     <div className="tulis-bg relative flex min-h-screen items-start justify-center overflow-y-auto px-4 pt-4 sm:pt-8 lg:pt-12 pb-8">
@@ -207,7 +279,56 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="tulis-surface w-full space-y-5 rounded-[var(--rLg)] border tulis-border p-6 sm:p-7">
+        <div className="tulis-surface w-full rounded-[var(--rLg)] border tulis-border p-6 sm:p-7">
+          {showActivationFlow ? (
+            <div className="space-y-5">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold tracking-tight tulis-text">Activate Tulis</h2>
+                <p className="text-sm tulis-muted opacity-75">
+                  You&apos;re signed in as <span className="font-semibold text-[color:var(--text)]">{activationUserName}</span>.
+                </p>
+                {activationUserEmail ? (
+                  <p className="text-xs tulis-muted opacity-70">{activationUserEmail}</p>
+                ) : null}
+                <p className="pt-1 text-sm tulis-muted opacity-75">
+                  Activate Tulis on your Yun Labs account to start writing.
+                </p>
+              </div>
+
+              {activationError ? (
+                <div className="rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface2)] p-3 text-xs font-medium tulis-text">
+                  {activationError}
+                </div>
+              ) : null}
+
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={handleActivateTulis}
+                  disabled={activationLoading}
+                  className="w-full rounded-[var(--rMd)] bg-[color:var(--accent)] py-3 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--accentHover)] disabled:opacity-50"
+                >
+                  {activationLoading ? 'Activating Tulis...' : 'Activate Tulis'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleActivationSignOut}
+                  disabled={activationLoading}
+                  className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-transparent py-3 text-sm font-semibold tulis-text transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
+                >
+                  Use a different account
+                </button>
+              </div>
+            </div>
+          ) : showSignedInCheck ? (
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight tulis-text">Checking access</h2>
+              <p className="text-sm tulis-muted opacity-75">
+                Verifying your Yun Labs account for Tulis...
+              </p>
+            </div>
+          ) : (
+            <>
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight tulis-text">{isSignUp ? 'Create account' : 'Sign in'}</h2>
             <p className="text-sm tulis-muted opacity-70">
@@ -351,6 +472,8 @@ export default function Login() {
               </button>
             </div>
           </form>
+            </>
+          )}
         </div>
       </div>
 

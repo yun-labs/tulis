@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { ensureUserHasNote } from '@/lib/notesLifecycle';
-import { ensureUserAppRegistration } from '@/lib/userRegistration';
+import { resolveTulisRegistration } from '@/lib/userRegistration';
 import { LoadingNotesScreen } from '@/components/LoadingNotesScreen';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -52,9 +52,16 @@ export default function NotesEntry() {
       markDevPerf('notes-entry:auth-resolved');
       measureDevPerf('notes-entry:mount-to-auth', 'notes-entry:mount', 'notes-entry:auth-resolved');
 
-      void ensureUserAppRegistration(user).catch((error) => {
-        console.error('Failed to ensure user app registration:', error);
-      });
+      try {
+        const registration = await resolveTulisRegistration(user);
+        if (registration.status === 'activation_required') {
+          hasNavigated = true;
+          router.replace('/login');
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to resolve user app registration:', error);
+      }
 
       try {
         const preferredNoteId = (() => {

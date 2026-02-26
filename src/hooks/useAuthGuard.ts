@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { ensureUserAppRegistration } from '@/lib/userRegistration';
+import { resolveTulisRegistration } from '@/lib/userRegistration';
 
 export function useAuthGuard() {
   const router = useRouter();
@@ -11,6 +11,8 @@ export function useAuthGuard() {
   const [loading, setLoading] = useState(() => !auth.currentUser);
 
   useEffect(() => {
+    let cancelled = false;
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
         setUser(null);
@@ -19,15 +21,38 @@ export function useAuthGuard() {
         return;
       }
 
-      setUser(currentUser);
-      setLoading(false);
+      setLoading(true);
 
-      void ensureUserAppRegistration(currentUser).catch((error) => {
-        console.error('Failed to ensure user app registration:', error);
-      });
+      void (async () => {
+        try {
+          const registration = await resolveTulisRegistration(currentUser);
+
+          if (cancelled) return;
+
+          if (registration.status === 'activation_required') {
+            setUser(null);
+            setLoading(false);
+            router.replace('/login');
+            return;
+          }
+
+          setUser(currentUser);
+          setLoading(false);
+        } catch (error) {
+          console.error('Failed to resolve user app registration:', error);
+
+          if (cancelled) return;
+
+          setUser(currentUser);
+          setLoading(false);
+        }
+      })();
     });
 
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [router]);
 
   return { user, loading };
