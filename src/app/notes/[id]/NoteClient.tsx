@@ -1093,7 +1093,7 @@ export default function NoteClient() {
 
     try {
       const minDuration = new Promise((resolve) => {
-        window.setTimeout(resolve, 650);
+        window.setTimeout(resolve, 850);
       });
 
       // Wait for both the router refresh and the minimum duration
@@ -1104,7 +1104,10 @@ export default function NoteClient() {
     } finally {
       pullRefreshInFlightRef.current = false;
       setIsPullRefreshing(false);
-      setPullRefreshDistance(0);
+      // Wait a tiny bit more for a smooth final collapse
+      window.setTimeout(() => {
+        setPullRefreshDistance(0);
+      }, 100);
     }
   }, [router]);
 
@@ -1173,6 +1176,8 @@ export default function NoteClient() {
       state.distance = 0;
 
       if (shouldRefresh) {
+        // Keep the shade at the trigger height during the sync
+        setPullRefreshDistance(PULL_REFRESH_TRIGGER_PX);
         void triggerPullRefresh();
         return;
       }
@@ -1500,17 +1505,18 @@ export default function NoteClient() {
     >
       {showPullRefreshCloud && (
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex flex-col items-center justify-center overflow-hidden border-b border-[color:var(--border)] bg-[color:var(--surface)]/60 backdrop-blur-md"
+          className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex flex-col items-center justify-center overflow-hidden border-b border-[color:var(--border)]"
           style={{
             height: `${Math.round(pullRefreshDistance)}px`,
-            opacity: 0.4 + (pullRefreshProgress * 0.6),
+            opacity: 0.8 + (pullRefreshProgress * 0.2),
+            background: `linear-gradient(to bottom, var(--bg) 0%, var(--bg) 70%, transparent 100%)`,
           }}
           aria-hidden="true"
         >
           <div
             className="flex flex-col items-center justify-center pt-2"
             style={{
-              transform: `translateY(${Math.min(0, (pullRefreshDistance - PULL_REFRESH_TRIGGER_PX) * 0.3)}px)`,
+              transform: `translateY(${Math.min(0, (pullRefreshDistance - PULL_REFRESH_TRIGGER_PX) * 0.2)}px)`,
             }}
           >
             <div className="relative flex h-8 w-8 items-center justify-center">
@@ -1542,12 +1548,14 @@ export default function NoteClient() {
               )}
             </div>
 
-            {!isPullRefreshing && pullRefreshDistance > 20 && (
+            {!isPullRefreshing && pullRefreshDistance > PULL_REFRESH_TRIGGER_PX * 0.4 && (
               <p
-                className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent)] transition-opacity duration-200"
-                style={{ opacity: Math.max(0, (pullRefreshProgress - 0.2) * 1.25) }}
+                className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent)] transition-opacity duration-300"
+                style={{
+                  opacity: Math.max(0, (pullRefreshDistance - PULL_REFRESH_TRIGGER_PX * 0.6) / (PULL_REFRESH_TRIGGER_PX * 0.4))
+                }}
               >
-                {pullRefreshDistance >= PULL_REFRESH_TRIGGER_PX ? 'Release to update' : 'Pull specialized notes'}
+                Release to update
               </p>
             )}
 
