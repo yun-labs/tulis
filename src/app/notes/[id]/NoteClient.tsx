@@ -1089,7 +1089,6 @@ export default function NoteClient() {
     if (pullRefreshInFlightRef.current) return;
     pullRefreshInFlightRef.current = true;
     setIsPullRefreshing(true);
-    setPullRefreshDistance(PULL_REFRESH_TRIGGER_PX * 0.7);
 
     try {
       const minDuration = new Promise((resolve) => {
@@ -1548,20 +1547,14 @@ export default function NoteClient() {
               )}
             </div>
 
-            {!isPullRefreshing && pullRefreshDistance > PULL_REFRESH_TRIGGER_PX * 0.4 && (
+            {(isPullRefreshing || pullRefreshDistance > PULL_REFRESH_TRIGGER_PX * 0.4) && (
               <p
-                className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent)] transition-opacity duration-300"
+                className={`mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent)] transition-opacity duration-300 ${isPullRefreshing ? 'animate-pulse' : ''}`}
                 style={{
-                  opacity: Math.max(0, (pullRefreshDistance - PULL_REFRESH_TRIGGER_PX * 0.6) / (PULL_REFRESH_TRIGGER_PX * 0.4))
+                  opacity: isPullRefreshing ? 1 : Math.max(0, (pullRefreshDistance - PULL_REFRESH_TRIGGER_PX * 0.6) / (PULL_REFRESH_TRIGGER_PX * 0.4))
                 }}
               >
-                Release to update
-              </p>
-            )}
-
-            {isPullRefreshing && (
-              <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent)] animate-pulse">
-                Refreshing
+                {isPullRefreshing ? 'Refreshing' : 'Release to update'}
               </p>
             )}
           </div>
