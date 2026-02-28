@@ -135,21 +135,21 @@ body {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 }
 
 @keyframes tulis-cloud-drop {
   0% {
     opacity: 0;
-    transform: translateY(-1px);
+    transform: translateY(-2px) scaleY(0.84);
   }
-  30% {
-    opacity: 1;
+  35% {
+    opacity: 0.9;
   }
   100% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px) scaleY(1);
   }
 }
 
@@ -161,8 +161,11 @@ body {
   animation: tulis-cloud-drop 0.8s linear infinite;
 }
 
-.tulis-cloud-drop-delay {
-  animation-delay: 0.18s;
+@media (prefers-reduced-motion: reduce) {
+  .tulis-cloud-drift,
+  .tulis-cloud-drop {
+    animation: none;
+  }
 }
 
 button:not(:disabled),

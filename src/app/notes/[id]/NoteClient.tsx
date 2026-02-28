@@ -189,6 +189,7 @@ export default function NoteClient() {
     top: 0,
   });
   const [mobileToolbarBottom, setMobileToolbarBottom] = useState(12);
+  const [mobileViewportOcclusionBottom, setMobileViewportOcclusionBottom] = useState(0);
   const [showJumpToTop, setShowJumpToTop] = useState(false);
   const [pullRefreshDistance, setPullRefreshDistance] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
@@ -1225,16 +1226,17 @@ export default function NoteClient() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!selectionToolbar.visible || !selectionToolbar.isMobile) return;
 
     const syncBottomInset = () => {
       const viewport = window.visualViewport;
       if (!viewport) {
+        setMobileViewportOcclusionBottom(0);
         setMobileToolbarBottom(12);
         return;
       }
 
       const occludedBottom = Math.max(0, window.innerHeight - (viewport.height + viewport.offsetTop));
+      setMobileViewportOcclusionBottom(occludedBottom);
       setMobileToolbarBottom(12 + occludedBottom);
     };
 
@@ -1250,7 +1252,7 @@ export default function NoteClient() {
       viewport?.removeEventListener('scroll', syncBottomInset);
       window.removeEventListener('resize', syncBottomInset);
     };
-  }, [selectionToolbar.isMobile, selectionToolbar.visible]);
+  }, []);
 
   useEffect(() => {
     if (!ready) {
@@ -1478,6 +1480,15 @@ export default function NoteClient() {
 
   const pullRefreshProgress = Math.min(1, pullRefreshDistance / PULL_REFRESH_TRIGGER_PX);
   const showPullRefreshCloud = pullRefreshDistance > 0 || isPullRefreshing;
+  const pullRefreshLabel = isPullRefreshing
+    ? 'Refreshing notes'
+    : pullRefreshProgress >= 1
+      ? 'Release to refresh'
+      : 'Pull to refresh';
+  const pullRefreshBarScale = isPullRefreshing ? 1 : Math.max(0.08, pullRefreshProgress);
+  const jumpToTopBottom = 12
+    + mobileViewportOcclusionBottom
+    + (selectionToolbar.visible && selectionToolbar.isMobile ? 64 : 0);
 
   if (!noteId || authLoading || !user || !ready) {
     return <NotePageSkeleton />;
@@ -1489,41 +1500,47 @@ export default function NoteClient() {
       onTouchStart={handleMobileSidebarSwipeStart}
     >
       {showPullRefreshCloud && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex justify-center px-3">
           <div
-            className="mt-2 flex items-center gap-2 rounded-full border border-[color:var(--border2)] bg-[color:var(--surface)]/95 px-3 py-1.5 shadow-sm backdrop-blur-[2px]"
+            className="mt-2 w-full max-w-[320px] rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)]/96 px-2.5 py-2 shadow-[var(--shadow1)] backdrop-blur-[3px]"
             style={{
-              transform: `translateY(${Math.round(pullRefreshDistance * 0.9)}px)`,
+              transform: `translateY(${Math.round(pullRefreshDistance * 0.9)}px) scale(${0.965 + (pullRefreshProgress * 0.035)})`,
               opacity: 0.25 + (pullRefreshProgress * 0.75),
             }}
             aria-hidden="true"
           >
-            <svg
-              className={`h-5 w-5 text-[color:var(--accent)] ${isPullRefreshing ? 'tulis-cloud-drift' : ''}`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path
-                d="M7.25 18h9.5a3.75 3.75 0 0 0 .34-7.49 5.5 5.5 0 0 0-10.71 1.17A3.42 3.42 0 0 0 7.25 18Z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <div className="relative h-4 w-5">
-              <span
-                className={`absolute left-0.5 top-0.5 h-1.5 w-[2px] rounded-full bg-[color:var(--accent)]/85 ${isPullRefreshing ? 'tulis-cloud-drop' : ''}`}
-                style={{ opacity: 0.2 + (pullRefreshProgress * 0.8) }}
-              />
-              <span
-                className={`absolute left-2 top-0 h-1.5 w-[2px] rounded-full bg-[color:var(--accent)]/85 ${isPullRefreshing ? 'tulis-cloud-drop tulis-cloud-drop-delay' : ''}`}
-                style={{ opacity: 0.2 + (pullRefreshProgress * 0.8) }}
-              />
-              <span
-                className={`absolute right-0.5 top-0.6 h-1.5 w-[2px] rounded-full bg-[color:var(--accent)]/85 ${isPullRefreshing ? 'tulis-cloud-drop' : ''}`}
-                style={{ opacity: 0.2 + (pullRefreshProgress * 0.8) }}
-              />
+            <div className="flex items-center gap-2.5">
+              <div className="relative flex h-7 w-7 items-center justify-center rounded-[var(--rSm)] border border-[color:var(--border2)] bg-[color:var(--surface2)]">
+                <svg
+                  className={`h-[18px] w-[18px] text-[color:var(--accent)] ${isPullRefreshing ? 'tulis-cloud-drift' : ''}`}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.85"
+                >
+                  <path
+                    d="M7.25 18h9.5a3.75 3.75 0 0 0 .34-7.49 5.5 5.5 0 0 0-10.71 1.17A3.42 3.42 0 0 0 7.25 18Z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span
+                  className={`absolute bottom-0.5 left-2 h-1.5 w-[2px] rounded-full bg-[color:var(--accent)]/85 ${isPullRefreshing ? 'tulis-cloud-drop' : ''}`}
+                  style={{ opacity: 0.2 + (pullRefreshProgress * 0.8) }}
+                />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[10px] font-semibold uppercase tracking-[0.11em] tulis-muted">
+                  {pullRefreshLabel}
+                </p>
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-[color:var(--surface2)]">
+                  <span
+                    className="block h-full origin-left rounded-full bg-[color:var(--accent)] transition-transform duration-150"
+                    style={{ transform: `scaleX(${pullRefreshBarScale})` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1921,13 +1938,14 @@ export default function NoteClient() {
         </main>
       </div>
 
-      {showJumpToTop && !selectionToolbar.visible && (
+      {showJumpToTop && (
         <button
           type="button"
           onClick={jumpToTop}
           aria-label="Jump to top"
           title="Jump to top"
-          className="fixed bottom-3 right-3 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text2)] shadow-md transition-colors hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)] sm:bottom-5 sm:right-5"
+          className="fixed right-3 z-40 inline-flex h-9 w-9 items-center justify-center rounded-[var(--rSm)] border border-[color:var(--border)] bg-[color:var(--surface)] tulis-muted shadow-[var(--shadow1)] transition-colors duration-150 hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)] sm:right-5"
+          style={{ bottom: `calc(${jumpToTopBottom}px + env(safe-area-inset-bottom))` }}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true">
             <polyline points="18 14 12 8 6 14" strokeLinecap="round" strokeLinejoin="round" />
