@@ -1,5 +1,5 @@
 'use client';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import {
@@ -14,7 +14,7 @@ import {
   getRedirectResult,
   updateProfile,
 } from 'firebase/auth';
-import { ensureUserAppRegistration } from '@/lib/userRegistration';
+import { resolveTulisRegistration } from '@/lib/userRegistration';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 function getFriendlyAuthError(error: unknown, fallback: string) {
@@ -57,6 +57,8 @@ export default function Login() {
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
+  const [sessionCheckLoading, setSessionCheckLoading] = useState(() => Boolean(auth.currentUser));
+  const registrationResolveRunRef = useRef(0);
 
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
@@ -68,6 +70,28 @@ export default function Login() {
     : isSignUp
       ? Boolean(trimmedName) && hasEmailShape && password.length >= 6 && confirmPassword === password
       : hasEmailShape && password.length > 0;
+  const showSignedInCheck = sessionCheckLoading && Boolean(auth.currentUser);
+
+  const handleSignedInUser = useCallback(async (user: User) => {
+    const runId = ++registrationResolveRunRef.current;
+    setSessionCheckLoading(true);
+    setError(null);
+
+    try {
+      await resolveTulisRegistration(user);
+
+      if (registrationResolveRunRef.current !== runId) return;
+      router.replace('/notes');
+    } catch (err: unknown) {
+      if (registrationResolveRunRef.current !== runId) return;
+      setError(getFriendlyAuthError(err, 'Could not load your Tulis access.'));
+      setLoading(false);
+    } finally {
+      if (registrationResolveRunRef.current === runId) {
+        setSessionCheckLoading(false);
+      }
+    }
+  }, [router]);
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -102,8 +126,7 @@ export default function Login() {
         signedInUser = credential.user;
       }
 
-      await ensureUserAppRegistration(signedInUser);
-      router.replace('/notes');
+      await handleSignedInUser(signedInUser);
     } catch (err: unknown) {
       setError(getFriendlyAuthError(err, `Could not ${isSignUp ? 'create your account' : 'sign you in'}.`));
     } finally {
@@ -121,8 +144,7 @@ export default function Login() {
 
       // Popup is more reliable for preserving auth state in this app flow.
       const credential = await signInWithPopup(auth, provider);
-      await ensureUserAppRegistration(credential.user);
-      router.replace('/notes');
+      await handleSignedInUser(credential.user);
     } catch (err: unknown) {
       const code = typeof err === 'object' && err && 'code' in err
         ? String((err as { code?: string }).code || '')
@@ -167,9 +189,7 @@ export default function Login() {
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
-          ensureUserAppRegistration(result.user).finally(() => {
-            router.replace('/notes');
-          });
+          void handleSignedInUser(result.user);
         }
       })
       .catch((err) => {
@@ -180,15 +200,18 @@ export default function Login() {
       });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        ensureUserAppRegistration(user).finally(() => {
-          router.replace('/notes');
-        });
+      if (!user) {
+        registrationResolveRunRef.current += 1;
+        setSessionCheckLoading(false);
+        setLoading(false);
+        return;
       }
+
+      void handleSignedInUser(user);
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [handleSignedInUser]);
 
   return (
     <div className="tulis-bg relative flex min-h-screen items-start justify-center overflow-y-auto px-4 pt-4 sm:pt-8 lg:pt-12 pb-8">
@@ -207,51 +230,60 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="tulis-surface w-full space-y-5 rounded-[var(--rLg)] border tulis-border p-6 sm:p-7">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight tulis-text">{isSignUp ? 'Create account' : 'Sign in'}</h2>
-            <p className="text-sm tulis-muted opacity-70">
-              {isSignUp ? 'Start writing in seconds.' : 'Continue to your notes.'}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-[var(--rMd)] border tulis-border bg-[color:var(--surface)] py-3 text-sm font-semibold tulis-text transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
-            Continue with Google
-          </button>
-
-          <p className="px-1 text-xs font-medium uppercase tracking-[0.12em] tulis-muted">Or use email</p>
-
-          <form className="space-y-4" onSubmit={handleLogin}>
-            {isSignUp && (
-              <div className="space-y-1.5">
-                <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="name">
-                  Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm tulis-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none"
-                  placeholder="Your name"
-                />
-                {name.length > 0 && !trimmedName && (
-                  <p className="px-1 text-xs tulis-muted">Name is required.</p>
-                )}
+        <div className="tulis-surface w-full rounded-[var(--rLg)] border tulis-border p-6 sm:p-7">
+          {showSignedInCheck ? (
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight tulis-text">Checking access</h2>
+              <p className="text-sm tulis-muted opacity-75">
+                Verifying your Yun Labs account for Tulis...
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold tracking-tight tulis-text">{isSignUp ? 'Create account' : 'Sign in'}</h2>
+                <p className="text-sm tulis-muted opacity-70">
+                  {isSignUp ? 'Start writing in seconds.' : 'Continue to your notes.'}
+                </p>
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-3 rounded-[var(--rMd)] border tulis-border bg-[color:var(--surface)] py-3 text-sm font-semibold tulis-text transition-colors hover:bg-[color:var(--surface2)] disabled:opacity-50"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                Continue with Google
+              </button>
+
+              <p className="px-1 text-xs font-medium uppercase tracking-[0.12em] tulis-muted">Or use email</p>
+
+              <form className="space-y-4" onSubmit={handleLogin}>
+                {isSignUp && (
+                  <div className="space-y-1.5">
+                    <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="name">
+                      Name
+                    </label>
+                    <input
+                      id="name"
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full rounded-[var(--rMd)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm tulis-text placeholder:text-[color:var(--text3)] transition-colors focus:border-[color:var(--accent)] focus:outline-none"
+                      placeholder="Your name"
+                    />
+                    {name.length > 0 && !trimmedName && (
+                      <p className="px-1 text-xs tulis-muted">Name is required.</p>
+                    )}
+                  </div>
+                )}
 
             <div className="space-y-1.5">
               <label className="block px-1 text-xs font-semibold uppercase tracking-[0.12em] tulis-muted" htmlFor="email">
@@ -350,7 +382,9 @@ export default function Login() {
                 {isSignUp ? 'Already have an account? Sign in' : 'New to tulis? Create an account'}
               </button>
             </div>
-          </form>
+              </form>
+            </div>
+          )}
         </div>
       </div>
 

@@ -31,6 +31,8 @@ type SelectionToolbarState = {
   top: number;
 };
 type SidebarMode = 'notes' | 'trash';
+const PULL_REFRESH_TRIGGER_PX = 84;
+const PULL_REFRESH_MAX_PX = 132;
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -187,6 +189,9 @@ export default function NoteClient() {
     top: 0,
   });
   const [mobileToolbarBottom, setMobileToolbarBottom] = useState(12);
+  const [showJumpToTop, setShowJumpToTop] = useState(false);
+  const [pullRefreshDistance, setPullRefreshDistance] = useState(0);
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const hasHydratedContentRef = useRef(false);
   const lastSubmittedContentRef = useRef<JSONContent | null>(null);
   const changeVersionRef = useRef(0);
@@ -210,6 +215,12 @@ export default function NoteClient() {
   const focusedTitleForNoteRef = useRef<string | null>(null);
   const recoveringNoteRef = useRef(false);
   const trashCleanupRunningRef = useRef(false);
+  const pullRefreshRef = useRef({
+    tracking: false,
+    startY: 0,
+    distance: 0,
+  });
+  const pullRefreshInFlightRef = useRef(false);
   const perfMarksRef = useRef({
     noteSnapshotMarked: false,
     contentAppliedMarked: false,
@@ -222,6 +233,9 @@ export default function NoteClient() {
   useEffect(() => {
     if (noteId) {
       setSyncStatus('loading');
+      setShowJumpToTop(false);
+      setPullRefreshDistance(0);
+      setIsPullRefreshing(false);
     }
   }, [noteId]);
 
@@ -1070,6 +1084,109 @@ export default function NoteClient() {
     };
   }, [editor, hideSelectionToolbar, isMobileSelectionViewport, updateSelectionToolbar]);
 
+  const triggerPullRefresh = useCallback(async () => {
+    if (pullRefreshInFlightRef.current) return;
+    pullRefreshInFlightRef.current = true;
+    setIsPullRefreshing(true);
+    setPullRefreshDistance(PULL_REFRESH_TRIGGER_PX * 0.7);
+
+    try {
+      router.refresh();
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 650);
+      });
+    } finally {
+      pullRefreshInFlightRef.current = false;
+      setIsPullRefreshing(false);
+      setPullRefreshDistance(0);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const scroller = editorScrollRef.current;
+    if (!scroller) return;
+
+    const isTouchLayout = () => window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (!ready) return;
+      if (!isTouchLayout()) return;
+      if (isPullRefreshing || selectionToolbar.visible) return;
+      if (event.touches.length !== 1) return;
+      if (scroller.scrollTop > 0) return;
+
+      const touch = event.touches[0];
+      pullRefreshRef.current.tracking = true;
+      pullRefreshRef.current.startY = touch.clientY;
+      pullRefreshRef.current.distance = 0;
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      const state = pullRefreshRef.current;
+      if (!state.tracking) return;
+
+      const touch = event.touches[0];
+      if (!touch) {
+        state.tracking = false;
+        state.distance = 0;
+        setPullRefreshDistance(0);
+        return;
+      }
+
+      if (scroller.scrollTop > 0) {
+        state.tracking = false;
+        state.distance = 0;
+        setPullRefreshDistance(0);
+        return;
+      }
+
+      const deltaY = touch.clientY - state.startY;
+      if (deltaY <= 0) {
+        state.distance = 0;
+        setPullRefreshDistance(0);
+        return;
+      }
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      const easedDistance = Math.min(PULL_REFRESH_MAX_PX, deltaY * 0.55);
+      state.distance = easedDistance;
+      setPullRefreshDistance(easedDistance);
+    };
+
+    const finishPull = () => {
+      const state = pullRefreshRef.current;
+      if (!state.tracking) return;
+
+      const shouldRefresh = state.distance >= PULL_REFRESH_TRIGGER_PX;
+      state.tracking = false;
+      state.distance = 0;
+
+      if (shouldRefresh) {
+        void triggerPullRefresh();
+        return;
+      }
+
+      setPullRefreshDistance(0);
+    };
+
+    scroller.addEventListener('touchstart', onTouchStart, { passive: true });
+    scroller.addEventListener('touchmove', onTouchMove, { passive: false });
+    scroller.addEventListener('touchend', finishPull);
+    scroller.addEventListener('touchcancel', finishPull);
+
+    return () => {
+      scroller.removeEventListener('touchstart', onTouchStart);
+      scroller.removeEventListener('touchmove', onTouchMove);
+      scroller.removeEventListener('touchend', finishPull);
+      scroller.removeEventListener('touchcancel', finishPull);
+    };
+  }, [isPullRefreshing, ready, selectionToolbar.visible, triggerPullRefresh]);
+
   useEffect(() => {
     if (!editor) return;
 
@@ -1134,6 +1251,31 @@ export default function NoteClient() {
       window.removeEventListener('resize', syncBottomInset);
     };
   }, [selectionToolbar.isMobile, selectionToolbar.visible]);
+
+  useEffect(() => {
+    if (!ready) {
+      setShowJumpToTop(false);
+      return;
+    }
+
+    const scroller = editorScrollRef.current;
+    if (!scroller) {
+      setShowJumpToTop(false);
+      return;
+    }
+
+    const thresholdPx = 260;
+    const syncJumpButton = () => {
+      setShowJumpToTop(scroller.scrollTop > thresholdPx);
+    };
+
+    syncJumpButton();
+    scroller.addEventListener('scroll', syncJumpButton, { passive: true });
+
+    return () => {
+      scroller.removeEventListener('scroll', syncJumpButton);
+    };
+  }, [ready, noteId]);
 
   useEffect(() => {
     if (!editor) return;
@@ -1325,15 +1467,68 @@ export default function NoteClient() {
     },
   ];
 
-  if (!noteId || authLoading || !user) {
+  const jumpToTop = useCallback(() => {
+    const scroller = editorScrollRef.current;
+    if (scroller) {
+      scroller.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const pullRefreshProgress = Math.min(1, pullRefreshDistance / PULL_REFRESH_TRIGGER_PX);
+  const showPullRefreshCloud = pullRefreshDistance > 0 || isPullRefreshing;
+
+  if (!noteId || authLoading || !user || !ready) {
     return <NotePageSkeleton />;
   }
 
   return (
     <div
-      className="flex h-screen w-full overflow-hidden tulis-bg font-sans selection:bg-[color:var(--focusRing)]"
+      className="relative flex h-[100dvh] w-full overflow-hidden tulis-bg font-sans selection:bg-[color:var(--focusRing)]"
       onTouchStart={handleMobileSidebarSwipeStart}
     >
+      {showPullRefreshCloud && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex justify-center">
+          <div
+            className="mt-2 flex items-center gap-2 rounded-full border border-[color:var(--border2)] bg-[color:var(--surface)]/95 px-3 py-1.5 shadow-sm backdrop-blur-[2px]"
+            style={{
+              transform: `translateY(${Math.round(pullRefreshDistance * 0.9)}px)`,
+              opacity: 0.25 + (pullRefreshProgress * 0.75),
+            }}
+            aria-hidden="true"
+          >
+            <svg
+              className={`h-5 w-5 text-[color:var(--accent)] ${isPullRefreshing ? 'tulis-cloud-drift' : ''}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path
+                d="M7.25 18h9.5a3.75 3.75 0 0 0 .34-7.49 5.5 5.5 0 0 0-10.71 1.17A3.42 3.42 0 0 0 7.25 18Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <div className="relative h-4 w-5">
+              <span
+                className={`absolute left-0.5 top-0.5 h-1.5 w-[2px] rounded-full bg-[color:var(--accent)]/85 ${isPullRefreshing ? 'tulis-cloud-drop' : ''}`}
+                style={{ opacity: 0.2 + (pullRefreshProgress * 0.8) }}
+              />
+              <span
+                className={`absolute left-2 top-0 h-1.5 w-[2px] rounded-full bg-[color:var(--accent)]/85 ${isPullRefreshing ? 'tulis-cloud-drop tulis-cloud-drop-delay' : ''}`}
+                style={{ opacity: 0.2 + (pullRefreshProgress * 0.8) }}
+              />
+              <span
+                className={`absolute right-0.5 top-0.6 h-1.5 w-[2px] rounded-full bg-[color:var(--accent)]/85 ${isPullRefreshing ? 'tulis-cloud-drop' : ''}`}
+                style={{ opacity: 0.2 + (pullRefreshProgress * 0.8) }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <NotesDrawer
         isSidebarOpen={isSidebarOpen}
         currentNoteId={noteId ?? ''}
@@ -1343,7 +1538,7 @@ export default function NoteClient() {
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[color:var(--canvas)]">
-        <header className="shrink-0 border-b border-[color:var(--divider)] bg-[color:var(--header)] px-3 py-2.5 sm:px-4">
+        <header className="sticky top-0 z-40 shrink-0 border-b border-[color:var(--divider)] bg-[color:var(--header)] px-3 py-2.5 sm:px-4">
           <div className="mx-auto grid min-w-0 max-w-[840px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[auto_minmax(0,1fr)_13.75rem] sm:gap-3">
             <div className="flex min-w-0 items-center justify-start">
               <button
@@ -1660,7 +1855,7 @@ export default function NoteClient() {
 
         <main
           ref={editorScrollRef}
-          className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-5 sm:px-6 sm:pb-16"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-24 pt-5 sm:px-6 sm:pb-16"
           onMouseDown={(event) => {
             if (!editor) return;
             if (isReadOnly) return;
@@ -1717,25 +1912,28 @@ export default function NoteClient() {
             </div>
           ) : (
             <div ref={editorColumnRef} className="mx-auto min-h-[60vh] max-w-[840px] min-w-0">
-              {!ready ? (
-                <div className="space-y-3 pt-1" aria-hidden="true">
-                  <div className="h-5 w-[58%] rounded bg-[color:var(--surface2)]" />
-                  <div className="h-4 w-full rounded bg-[color:var(--surface2)]" />
-                  <div className="h-4 w-[91%] rounded bg-[color:var(--surface2)]" />
-                  <div className="h-4 w-[87%] rounded bg-[color:var(--surface2)]" />
-                  <div className="h-4 w-[95%] rounded bg-[color:var(--surface2)]" />
-                  <div className="h-4 w-[79%] rounded bg-[color:var(--surface2)]" />
-                </div>
-              ) : (
-                <EditorContent
-                  editor={editor}
-                  className="prose prose-lg dark:prose-invert max-w-none focus:outline-none tulis-text"
-                />
-              )}
+              <EditorContent
+                editor={editor}
+                className="prose prose-lg dark:prose-invert max-w-none focus:outline-none tulis-text"
+              />
             </div>
           )}
         </main>
       </div>
+
+      {showJumpToTop && !selectionToolbar.visible && (
+        <button
+          type="button"
+          onClick={jumpToTop}
+          aria-label="Jump to top"
+          title="Jump to top"
+          className="fixed bottom-3 right-3 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--text2)] shadow-md transition-colors hover:bg-[color:var(--surface2)] hover:text-[color:var(--text)] sm:bottom-5 sm:right-5"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true">
+            <polyline points="18 14 12 8 6 14" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
 
       {!isReadOnly && selectionToolbar.visible && selectionToolbar.isMobile && (
         <div
