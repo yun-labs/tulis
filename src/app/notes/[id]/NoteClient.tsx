@@ -1176,8 +1176,8 @@ export default function NoteClient() {
       state.distance = 0;
 
       if (shouldRefresh) {
-        // Keep the shade at the trigger height during the sync
-        setPullRefreshDistance(PULL_REFRESH_TRIGGER_PX);
+        // Snap to max height during the sync for a consistent, spacious look
+        setPullRefreshDistance(PULL_REFRESH_MAX_PX);
         void triggerPullRefresh();
         return;
       }
@@ -1505,7 +1505,7 @@ export default function NoteClient() {
     >
       {showPullRefreshCloud && (
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex flex-col items-center justify-center overflow-hidden border-b border-[color:var(--border)]"
+          className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex flex-col items-center justify-center overflow-hidden"
           style={{
             height: `${Math.round(pullRefreshDistance)}px`,
             opacity: 0.8 + (pullRefreshProgress * 0.2),
