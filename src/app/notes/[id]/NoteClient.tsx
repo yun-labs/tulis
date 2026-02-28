@@ -1092,10 +1092,15 @@ export default function NoteClient() {
     setPullRefreshDistance(PULL_REFRESH_TRIGGER_PX * 0.7);
 
     try {
-      router.refresh();
-      await new Promise((resolve) => {
+      const minDuration = new Promise((resolve) => {
         window.setTimeout(resolve, 650);
       });
+
+      // Wait for both the router refresh and the minimum duration
+      await Promise.all([
+        router.refresh(),
+        minDuration
+      ]);
     } finally {
       pullRefreshInFlightRef.current = false;
       setIsPullRefreshing(false);
@@ -1494,43 +1499,63 @@ export default function NoteClient() {
       onTouchStart={handleMobileSidebarSwipeStart}
     >
       {showPullRefreshCloud && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex justify-center px-3">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-[62] flex flex-col items-center justify-center overflow-hidden border-b border-[color:var(--border)] bg-[color:var(--surface)]/60 backdrop-blur-md"
+          style={{
+            height: `${Math.round(pullRefreshDistance)}px`,
+            opacity: 0.4 + (pullRefreshProgress * 0.6),
+          }}
+          aria-hidden="true"
+        >
           <div
-            className="mt-2 flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)]/96 shadow-[var(--shadow1)] backdrop-blur-[3px]"
+            className="flex flex-col items-center justify-center pt-2"
             style={{
-              transform: `translateY(${Math.round(pullRefreshDistance * 0.9)}px) scale(${0.92 + (pullRefreshProgress * 0.08)})`,
-              opacity: 0.25 + (pullRefreshProgress * 0.75),
+              transform: `translateY(${Math.min(0, (pullRefreshDistance - PULL_REFRESH_TRIGGER_PX) * 0.3)}px)`,
             }}
-            aria-hidden="true"
           >
-            <div className="relative flex h-7 w-7 items-center justify-center">
-                <svg
-                  className={`h-5 w-5 text-[color:var(--accent)] ${isPullRefreshing ? 'tulis-cloud-drift' : ''}`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.85"
-                >
-                  <path
-                    d="M7.25 18h9.5a3.75 3.75 0 0 0 .34-7.49 5.5 5.5 0 0 0-10.71 1.17A3.42 3.42 0 0 0 7.25 18Z"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+            <div className="relative flex h-8 w-8 items-center justify-center">
+              <svg
+                className={`h-6 w-6 text-[color:var(--accent)] ${isPullRefreshing ? 'tulis-cloud-drift' : ''}`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.85"
+              >
+                <path
+                  d="M7.25 18h9.5a3.75 3.75 0 0 0 .34-7.49 5.5 5.5 0 0 0-10.71 1.17A3.42 3.42 0 0 0 7.25 18Z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {isPullRefreshing && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="tulis-cloud-drop absolute bottom-[-4px] left-[11px] h-2 w-[2px] rounded-full bg-[color:var(--accent)]/85" />
+                  <span
+                    className="tulis-cloud-drop absolute bottom-[-4px] left-[14.5px] h-2.5 w-[2px] rounded-full bg-[color:var(--accent)]/85"
+                    style={{ animationDelay: '0.14s' }}
                   />
-                </svg>
-                {isPullRefreshing && (
-                  <>
-                    <span className="tulis-cloud-drop absolute bottom-[-2px] left-[7px] h-2 w-[2px] rounded-full bg-[color:var(--accent)]/85" />
-                    <span
-                      className="tulis-cloud-drop absolute bottom-[-2px] left-[11px] h-2.5 w-[2px] rounded-full bg-[color:var(--accent)]/85"
-                      style={{ animationDelay: '0.14s' }}
-                    />
-                    <span
-                      className="tulis-cloud-drop absolute bottom-[-2px] left-[15px] h-2 w-[2px] rounded-full bg-[color:var(--accent)]/85"
-                      style={{ animationDelay: '0.28s' }}
-                    />
-                  </>
-                )}
+                  <span
+                    className="tulis-cloud-drop absolute bottom-[-4px] left-[18px] h-2 w-[2px] rounded-full bg-[color:var(--accent)]/85"
+                    style={{ animationDelay: '0.28s' }}
+                  />
+                </div>
+              )}
             </div>
+
+            {!isPullRefreshing && pullRefreshDistance > 20 && (
+              <p
+                className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent)] transition-opacity duration-200"
+                style={{ opacity: Math.max(0, (pullRefreshProgress - 0.2) * 1.25) }}
+              >
+                {pullRefreshDistance >= PULL_REFRESH_TRIGGER_PX ? 'Release to update' : 'Pull specialized notes'}
+              </p>
+            )}
+
+            {isPullRefreshing && (
+              <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent)] animate-pulse">
+                Refreshing
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -1616,9 +1641,9 @@ export default function NoteClient() {
                       ? 'bg-[color:var(--text2)]'
                       : syncStatus === 'loading'
                         ? 'bg-[color:var(--text3)]'
-                      : syncStatus === 'error'
-                        ? 'bg-[color:var(--dangerSolid)]'
-                        : 'bg-[color:var(--text2)]'
+                        : syncStatus === 'error'
+                          ? 'bg-[color:var(--dangerSolid)]'
+                          : 'bg-[color:var(--text2)]'
                       }`}
                   />
                 </span>
